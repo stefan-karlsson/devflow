@@ -1,0 +1,67 @@
+{
+    "devflow": {
+        "version": "0.2.0",
+        "description": "The plugin version this configuration was written against. The router compares it with the running plugin's manifest version when /develop is typed, and manifest-alignment asserts it agrees with both manifests."
+    },
+    "gauntlets": {
+        "ticket": [
+            {
+                "name": "manifest-alignment",
+                "command": "docs/agents/gauntlets/manifest-alignment.sh",
+                "description": "Both manifests agree on name, version, description and author, and the version stamp in this file agrees with them."
+            },
+            {
+                "name": "marketplace-source-path",
+                "command": "docs/agents/gauntlets/marketplace-source-path.sh",
+                "description": "Each marketplace entry's source path resolves to a directory that exists."
+            },
+            {
+                "name": "skill-discovery",
+                "command": "docs/agents/gauntlets/skill-discovery.sh",
+                "description": "Every skill the plugin ships sits where the default scan reaches it: no skills key in the plugin manifest, and every SKILL.md exactly one level under skills/. A skill placed anywhere else registers nowhere and reports nothing."
+            },
+            {
+                "name": "shipped-executables",
+                "command": "docs/agents/gauntlets/shipped-executables.sh",
+                "description": "Every file the plugin ships to be run is a non-empty regular file carrying the executable bit."
+            },
+            {
+                "name": "markdown-links",
+                "command": "docs/agents/gauntlets/markdown-links.sh",
+                "description": "Every relative link in every tracked markdown file this repository owns resolves."
+            },
+            {
+                "name": "skill-conformance",
+                "command": "docs/agents/gauntlets/skill-conformance.sh",
+                "description": "The Agent Skills specification's Must rules over every skill directory in the subject. The plugin owns this file and the payload installer copies it here."
+            },
+            {
+                "name": "skill-hygiene",
+                "command": "docs/agents/gauntlets/skill-hygiene.sh",
+                "description": "Skill references resolve and SKILL.md stays under 500 lines. The plugin owns this file and the payload installer copies it here."
+            },
+            {
+                "name": "adf-converter-tests",
+                "command": "node --test \"tests/**/*.test.mjs\"",
+                "description": "The markdown-to-ADF converter's behaviour, through the Node builtin test runner. The glob is quoted on purpose: the bare directory form fails with MODULE_NOT_FOUND on the Node this repository runs."
+            },
+            {
+                "name": "payload-installer-tests",
+                "command": "tests/payload-installer.test.sh",
+                "description": "The payload installer's preflight, drift refusal and orphan reporting."
+            },
+            {
+                "name": "dependency-probe-tests",
+                "command": "tests/dependency-probe.test.sh",
+                "description": "The dependency probe against fixture skill roots: the eleven required skills, the optional ones whose absence is not a fault, the two floor markers, the disable-model-invocation split in both directions, and the duplicate rule under the symlinked install layout the supported route produces."
+            },
+            {
+                "name": "issue-standards-tests",
+                "command": "tests/issue-standards.test.sh",
+                "description": "The issue-standards check over fixture artifact repositories: the five headings and their spelling, the section and link assertions, the ADF vocabulary, the summary rules, and the scope boundary it deliberately does not cross."
+            }
+        ],
+        "integration": [],
+        "issue": []
+    }
+}

@@ -1,0 +1,79 @@
+#  This workflow is a runner, not a list. It reads the ticket gauntlet out of
+#  docs/agents/workflow.json and runs whatever it finds there, so adding, renaming or
+#  removing a check never touches this file. Naming a check here would create a second
+#  definition of what the checks are, and the two would drift.
+#
+#  The run point is `ticket`: this workflow is the same gate the orchestrator runs
+#  in-session before a ticket branch merges, reached by the other of its two routes.
+name: gauntlet
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ticket:
+    name: ticket gauntlet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The checks are dependency-free bash and jq, which the runner image already has.
+      # Node is the only other runtime, and it is pinned so that a runner image bump
+      # cannot change what the converter's tests ran against.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Run the ticket gauntlet
+        env:
+          GAUNTLET_SUBJECT: ${{ github.workspace }}
+        run: |
+          set -uo pipefail
+
+          config=docs/agents/workflow.json
+          if [ ! -f "$config" ]; then
+            echo "::error::$config is missing. Run the devflow setup skill." >&2
+            exit 1
+          fi
+          if ! jq -e . "$config" >/dev/null; then
+            echo "::error::$config is not parseable JSON." >&2
+            exit 1
+          fi
+
+          # A missing section and an empty one are different answers. Absent is a
+          # refusal scoped to the one operation this workflow performs; declared-empty
+          # is "nothing to run", which is a pass that says so out loud.
+          if ! jq -e 'has("gauntlets") and (.gauntlets | has("ticket"))' "$config" >/dev/null; then
+            echo "::error::$config declares no ticket run point, so this gate asserts nothing." >&2
+            exit 1
+          fi
+          if [ "$(jq -r '.gauntlets.ticket | length' "$config")" -eq 0 ]; then
+            echo "The ticket run point is declared and empty. Nothing ran."
+            exit 0
+          fi
+
+          # Exit code is the whole contract; stdout and stderr are captured verbatim.
+          # Every entry runs even after one fails, so one push reports every failure
+          # rather than only the first.
+          failed=()
+          while IFS=$'\t' read -r name command; do
+            echo "::group::$name"
+            echo "\$ $command"
+            if bash -c "$command"; then
+              echo "pass  $name"
+            else
+              status=$?
+              echo "fail  $name (exit $status)"
+              failed+=("$name")
+            fi
+            echo "::endgroup::"
+          done < <(jq -r '.gauntlets.ticket[] | [.name, .command] | @tsv' "$config")
+
+          if [ "${#failed[@]}" -ne 0 ]; then
+            printf '::error::ticket gauntlet failed: %s\n' "${failed[*]}" >&2
+            exit 1
+          fi
+          echo "ticket gauntlet passed."

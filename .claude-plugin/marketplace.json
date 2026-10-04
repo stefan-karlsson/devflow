@@ -1,0 +1,19 @@
+{
+    "name": "devflow",
+    "description": "Distribution channel for the devflow plugin.",
+    "owner": {
+        "name": "Stefan Karlsson"
+    },
+    "plugins": [
+        {
+            "name": "devflow",
+            "source": "./plugins/devflow",
+            "version": "0.2.0",
+            "description": "A configuration contract and workflow router that runs one development workflow on Claude Code.",
+            "author": {
+                "name": "Stefan Karlsson"
+            },
+            "category": "Productivity"
+        }
+    ]
+}
