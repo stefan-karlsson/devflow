@@ -119,6 +119,11 @@ fail, it fails silently, so it is read as an exit code rather than judged:
 `<plugin root>` is the path you just read out of the record. Build the real path before running
 the command; nothing in this body expands it for you.
 
+**Run it on its own and read its own exit code.** Bundled into a compound command with anything
+else, the status that comes back is the last command's, so a probe that passed arrives here as
+a scan that could not be performed and refuses a machine that is fine. Everything below turns
+on that code, which means it has to be the probe's.
+
 **Exit 0 continues the run, and you state what the probe found.** Say the counts it printed,
 `skills-before`, `skills-after`, `devflow-adds` and `findings`, in this session. A bug report
 that is really a version skew then carries the state it skewed from.
@@ -180,6 +185,23 @@ that reads it, and that phase declares it.
 An **effort** is one spec and its tickets. It lives in the artifact repository, reached as the
 sibling clone `setup-devflow` creates, at a path derived rather than stored. Every path below
 is relative to that clone's root.
+
+**Check the clone is there, because a clean setup does not guarantee one.** `setup-devflow`
+skips the clone where the artifact repository does not exist yet and reports that tier skipped
+rather than failed, so a machine can finish setup with nothing wrong and arrive here with
+nowhere to keep a spec. Derive the path the way setup does, a sibling of this repository's
+checkout carrying the remote's own repository name, and check it holds a git repository whose
+origin is `artifacts.remote`.
+
+**Refuse when it does not, and print the path you looked at.** Naming the path is most of the
+help: the remote's group path and the checkout's parent directory need not be the same shape,
+so an engineer who cloned the artifact repository where their own tree puts it sees in one line
+why devflow looked elsewhere. Name `setup-devflow` as the thing that makes the clone, and say
+that it refuses to create the repository itself where that is the part that is missing.
+
+Skipping this check does not produce an error. The first row of the inspection below misses,
+names **Grill**, and sends the engineer off to build a spec that `/to-spec` will then try to
+write into a directory that is not there.
 
 **With no slug:** list the directories under `efforts/` and offer a new effort. Do not guess
 from the branch you are on, and do not pick the most recently modified one.

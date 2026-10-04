@@ -16,14 +16,17 @@ Every step shows its diff before writing, and a rejected diff is not written.
 
 Discovery first, because it is read-only and everything after it is a proposal built from what
 it found. Then the copied checks, because the configuration names them by path and a path
-should name a file that is already there. Then the configuration, the host settings and the
-tracker document, in any order. Validation is last, over what was written.
+should name a file that is already there. Then the configuration, which has to precede the
+tracker document because that document's already-present test reads the `tracker` keys out of
+it. Then the host settings and the tracker document, in either order. Validation is last, over
+what was written.
 
 ## What this tier never writes
 
-- **The code remote and the current branch.** Both are facts the environment already states:
-  `git remote -v` and `git rev-parse --abbrev-ref HEAD`. Derive them at the moment they are
-  needed. Configuring a fact the environment states is how the two drift apart, and the drift
+- **The code remote's URL and the current branch.** Both are facts the environment already
+  states: `git remote -v` and `git rev-parse --abbrev-ref HEAD`. Derive them at the moment they
+  are needed. `pullRequests.remote` is the remote's *name*, which is a choice among the remotes
+  configured rather than a fact read back, and that is written. Configuring a fact the environment states is how the two drift apart, and the drift
   surfaces only when they disagree.
 - **An invisible default.** No key is left out on the understanding that a reader substitutes a
   value for it. What runs is what the commit says. `build.concurrency` defaults to 3 by setup
@@ -54,7 +57,10 @@ Look for both stacks. A repository may hold both.
 - **dotnet.** Look for `*.sln`, `*.slnx` and `*.csproj`. Propose `dotnet build`, `dotnet test`
   and `dotnet format --verify-no-changes`. `.slnx` is named on its own because .NET 10's XML
   solution format is invisible to a `*.sln` glob, and a team on 10 would otherwise get a silent
-  zero with nothing to tell them why.
+  zero with nothing to tell them why. **Match each pattern on its own.** A shell that treats an
+  unmatched glob as an error abandons the whole command, so one listing naming all three
+  reports nothing on a repository that holds two of them, which is the same silent zero reached
+  by a different route.
 - Existing CI workflow files and a `Makefile` are further places a command is already written
   down. Propose what you read there. Do not invent a target.
 
@@ -99,7 +105,7 @@ The key set, and nothing outside it:
 
 ```json
 {
-  "devflow": { "version": "0.1.0" },
+  "devflow": { "version": "<the running plugin's version>" },
   "tracker": {
     "site": "example.atlassian.net",
     "projectKey": "ABC",
@@ -108,7 +114,7 @@ The key set, and nothing outside it:
   "artifacts": { "remote": "<git URL>" },
   "pullRequests": {
     "remote": "origin",
-    "targetBranch": "main",
+    "targetBranch": "<the remote's default branch>",
     "branchPattern": "<encodes the ticket key>",
     "draft": true
   },
@@ -121,9 +127,9 @@ The key set, and nothing outside it:
   The router compares it at its own start, the moment `/develop` is typed, warning on a minor
   mismatch and refusing on a major one, which is what makes an upgrade loud rather than
   mysterious. Nothing compares it earlier: a skill is inert text until a model loads it, and this
-  plugin registers no `SessionStart` hook. Write this exact path:
-  something else already reads it, and a second spelling would make the comparison silently
-  never happen.
+  plugin registers no `SessionStart` hook. Write it under exactly this key, because something
+  else already reads it and a second spelling would make the comparison silently never
+  happen.
 - **`tracker`** carries `site`, `projectKey` and `issueType`, and these three only. Ask for
   them. A repository with no Jira identity is a normal repository: leave the section out, and
   issue creation refuses by naming the key while the build loop keeps working.
@@ -135,6 +141,17 @@ The key set, and nothing outside it:
   configured. When the team has no artifact repository yet, leave the section out; the machine
   tier then skips its clone and says why, rather than guessing a remote that fails much later.
 - **`pullRequests`** carries `remote`, `targetBranch`, `branchPattern` and `draft`.
+  **`branchPattern` is a branch name with `<key>` standing for the ticket key and `<slug>` for
+  the free text after it**, and those two placeholders are the only ones. Everything else is
+  literal, so `chore/<key>-<slug>` recognises `chore/LEG-2115-service-catalog`. **Propose it
+  from the branches the repository already has**, which `git branch -a` lists, rather than
+  inventing a shape: `develop` answers "is every ticket branch merged" by expanding this
+  pattern against each ticket key, so a pattern matching nothing an engineer actually creates
+  makes that test answer about an empty set and report a build finished.
+  **`targetBranch` is the remote's default branch, read and never assumed:**
+  `git symbolic-ref refs/remotes/origin/HEAD`. Plenty of repositories say `master`, and the
+  branch the engineer happens to be standing on when setup runs answers neither question. A
+  wrong value here opens every merge request against a branch nobody merges.
   `branchPattern` must encode the ticket key, because the integration branch's `git log` is the
   only record of which tickets are done. **There is no `granularity`.** One merge request per
   spec is the only mode anything implements, and a key no code reads is machinery without a
@@ -171,6 +188,12 @@ converter it calls.
 That path and the team tier's install destination are one fact written in two files. Take it
 from the team tier's own procedure rather than assuming it, and if the two ever disagree the
 declaration is wrong and the install is right.
+
+**Declare it only where the `artifacts` section is written.** The contract makes a declared but
+unrunnable check a failure rather than a skip, so declaring this one against a clone nobody has
+made yet turns the `issue` run point red for the whole team until somebody makes it. Leave the
+array empty, say that the artifact repository is what fills it, and the re-run that follows its
+creation writes the entry.
 
 ## The committed host settings
 
@@ -213,9 +236,16 @@ Seed `<plugin root>/templates/jira-issue-tracker.md` into `docs/agents/issue-tra
 The plugin-root mechanic and its failure symptom are in this skill's own body; the same rule
 applies here.
 
-**Already present** when the file there is the Jira document, which it is when it names the
-`tracker` keys in `docs/agents/workflow.json` and points at the team standard. Seeded once and
-never touched again: a team's edits to their own copy are theirs.
+**Already present** when the file there is *a* Jira tracker document that reaches the team
+standard, which it is when it names the `tracker` keys this run wrote into
+`docs/agents/workflow.json` and points at `docs/agents/jira-issue-standard.md`. It does not have
+to be this plugin's template, and a document that satisfies both is not reseeded over. Seeded
+once and never touched again: a team's edits to their own copy are theirs, and so is a document
+they wrote instead of taking the template.
+
+Where the human asks for the template anyway over a document that already passes, reseed it and
+**carry their content across rather than appending the template's**: what they are keeping is
+the half the template does not have.
 
 The precondition refusal has already established that *some* tracker document exists, because
 the upstream setup skill wrote one for whichever tracker the human picked when they ran it.
@@ -224,6 +254,21 @@ A rejection costs publishing, not the build loop, so say which half stops workin
 
 The document **carries no wayfinding section.** Maps and wayfinding tickets stay in the artifact
 repository and off the board; wayfinding on Jira is out of scope by decision, not by omission.
+
+## The repository's own agent instructions
+
+The code repository has an agent-instructions file of its own, `CLAUDE.md` or `AGENTS.md` at its
+root, written by the upstream setup skill and indexing the documents under `docs/agents/`. This
+tier **does not seed it and does not restructure it.** One thing only: where its tracker section
+spells out the site, the project key or the issue type, replace those values with a pointer to
+`tracker.*` in `docs/agents/workflow.json`, which is now the one home for all three.
+
+That edit is not tidying. The tracker document this tier just seeded stops carrying those
+values, so an index still reciting them leaves two answers in one repository, and the stale one
+is the one a reader meets first. Show the diff like any other write and let the human reject it.
+
+**Nothing else in that file is this tier's business.** It belongs to the repository, and most of
+what it indexes has nothing to do with devflow.
 
 ## The triage-label file
 

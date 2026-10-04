@@ -45,6 +45,11 @@ code repository reaches it as a clone on this machine.
   anything that needs it.
 - **Already present** when that path holds a git repository whose origin is that remote. Say so
   and move on. A clone that exists with a different origin is reported and not touched.
+- **State the path, whether you made the clone, found it or skipped it.** It is derived and
+  stored nowhere, and the derivation puts it beside the checkout rather than wherever the
+  remote's own group path would suggest. Those two differ in any tree that mirrors a group
+  hierarchy, so an engineer who is never told the path clones to the one their tree implies
+  and nothing afterwards finds it.
 
 When the configuration carries no artifacts remote, this step is skipped and says why: the
 repository tier writes that key, and a remote guessed here would be wrong in a way nobody

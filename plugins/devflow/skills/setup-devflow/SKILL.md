@@ -269,6 +269,14 @@ tiers, and the only place a host decision is recorded on this machine.
   human in it. The slots and what each one means belong to the core, in
   [references/slots.md](references/slots.md); the adapter holds this host's answers and nothing
   else.
+
+  **Run it now and compare what it returns with the root step 1 acquired.** This is the first
+  moment the host's own answer is reachable, and step 1 could not wait for it because the
+  adapter sits under the root it is trying to find. Step 1's two assertions do not stand in
+  for this comparison: they pass against any current install, including one on this machine
+  that this host never loads. Where the two paths differ, print both, say which one the host's
+  own method returned, and record that one. Where slot 1 answers that this host has no
+  equivalent, there is nothing to compare and the acquired root stands.
 - **The capability declarations.** Where the adapter answers `present` or `absent`, take that
   answer and do not ask. Where it leaves one `unknown`, ask the human and record what they say.
   An adapter that answered is never re-asked, because having the host's own answers written down
