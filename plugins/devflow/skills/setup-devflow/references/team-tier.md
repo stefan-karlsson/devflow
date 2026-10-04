@@ -122,7 +122,7 @@ Merge, never overwrite. A repository that already has an `AGENTS.md` keeps every
 
 ### The Jira issue standard
 
-Seed `${CLAUDE_PLUGIN_ROOT}/templates/jira-issue-standard.md` into
+Seed `<plugin root>/templates/jira-issue-standard.md` into
 `docs/agents/jira-issue-standard.md`. The plugin-root mechanic and its failure symptom are in
 this skill's own body; the same rule applies here.
 
@@ -141,7 +141,7 @@ rules is a different team, and a different team gets a different artifact reposi
 One installer invocation carries both, into one directory:
 
 ```
-${CLAUDE_PLUGIN_ROOT}/scripts/install-payload.sh payload/artifact-repo docs/agents/gauntlets
+<plugin root>/scripts/install-payload.sh payload/artifact-repo docs/agents/gauntlets
 ```
 
 `issue-standards.sh` finds the converter as **its own sibling**, resolved from its own location

@@ -1,14 +1,14 @@
 {
     "devflow": {
-        "version": "0.2.0",
-        "description": "The plugin version this configuration was written against. The router compares it with the running plugin's manifest version when /develop is typed, and manifest-alignment asserts it agrees with both manifests."
+        "version": "0.3.0",
+        "description": "The plugin version this configuration was written against. The router compares it with the running plugin's manifest version when /develop is typed, and manifest-alignment asserts it agrees with both manifests and with every skill body stamp."
     },
     "gauntlets": {
         "ticket": [
             {
                 "name": "manifest-alignment",
                 "command": "docs/agents/gauntlets/manifest-alignment.sh",
-                "description": "Both manifests agree on name, version, description and author, and the version stamp in this file agrees with them."
+                "description": "Both manifests agree on name, version, description and author, and the version stamp in this file and every stamp in a skill body agree with them."
             },
             {
                 "name": "marketplace-source-path",
@@ -19,6 +19,16 @@
                 "name": "skill-discovery",
                 "command": "docs/agents/gauntlets/skill-discovery.sh",
                 "description": "Every skill the plugin ships sits where the default scan reaches it: no skills key in the plugin manifest, and every SKILL.md exactly one level under skills/. A skill placed anywhere else registers nowhere and reports nothing."
+            },
+            {
+                "name": "adapter-slot-completeness",
+                "command": "docs/agents/gauntlets/adapter-slot-completeness.sh",
+                "description": "Every adapter answers exactly the slots the core's slots.md defines. The expected set is derived from that file's headings and never restated here, so a slot the core gains is a slot every adapter is immediately reported as missing."
+            },
+            {
+                "name": "adapter-readme-agreement",
+                "command": "docs/agents/gauntlets/adapter-readme-agreement.sh",
+                "description": "The slugs under plugins/devflow/adapters/ and the slugs in the README's host table are the same set, in both directions, so a host joins or leaves in one act rather than two."
             },
             {
                 "name": "shipped-executables",
@@ -59,6 +69,16 @@
                 "name": "issue-standards-tests",
                 "command": "tests/issue-standards.test.sh",
                 "description": "The issue-standards check over fixture artifact repositories: the five headings and their spelling, the section and link assertions, the ADF vocabulary, the summary rules, and the scope boundary it deliberately does not cross."
+            },
+            {
+                "name": "adapter-checks-tests",
+                "command": "tests/adapter-checks.test.sh",
+                "description": "The two adapter checks against fixture trees holding a slots.md, an adapters/ directory and a README: a complete adapter, a missing slot, a heading the enumeration does not define, an enumeration the adapters have not caught up with, each direction of the README disagreement, two adapters so neither check is known only against a set of one, and the prose the host section carries after its table."
+            },
+            {
+                "name": "worktree-isolation-tests",
+                "command": "tests/worktree-isolation.test.sh",
+                "description": "The worktree isolation script against real git repositories with real worktrees: the isolated branch, the branch held by the main checkout, the branch no worktree holds, the stale SHA, the detached HEAD, the separate clone, the prefix branch name, and the arguments that leave it unable to answer."
             }
         ],
         "integration": [],

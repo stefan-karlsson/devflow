@@ -70,10 +70,11 @@ report `not run`. Do not fill it with something plausible.
 The plugin owns the source of truth for the checks it ships and copies them in, so the
 configuration can name a repository-relative path and the repository keeps working with the
 plugin uninstalled. Copying is a script's job, not yours: the case it guards against is exactly
-the case where a model has decided a difference does not matter.
+the case where a model has decided a difference does not matter. `<plugin root>` is the path
+this skill's own body says to build from the machine record.
 
 ```
-${CLAUDE_PLUGIN_ROOT}/scripts/install-payload.sh payload/gauntlets docs/agents/gauntlets
+<plugin root>/scripts/install-payload.sh payload/gauntlets docs/agents/gauntlets
 ```
 
 The installer prints facts and runs no git. It refuses on drift and has no flag that silences
@@ -208,7 +209,7 @@ its own or the flow reached it. That is why the team's issue standard is reached
 that document and needs no new mechanism: the document points at the standard exactly as it
 already points at the triage-label vocabulary.
 
-Seed `${CLAUDE_PLUGIN_ROOT}/templates/jira-issue-tracker.md` into `docs/agents/issue-tracker.md`.
+Seed `<plugin root>/templates/jira-issue-tracker.md` into `docs/agents/issue-tracker.md`.
 The plugin-root mechanic and its failure symptom are in this skill's own body; the same rule
 applies here.
 

@@ -4,10 +4,20 @@
 # because the plugin does not ship it: it asserts on this plugin's packaging, which no
 # consumer repository has, so it must never be mistaken for an installer orphan.
 #
-# Two manifests describe one plugin, the marketplace and the plugin's own, and a third
-# place records the same version: the stamp in docs/agents/workflow.json that the router
-# compares when /develop is typed. Name, version, description and author must agree
-# across both manifests, and the stamp must agree with them.
+# Two manifests describe one plugin, the marketplace and the plugin's own, and two further
+# kinds of place record the same version: the stamp in docs/agents/workflow.json that the
+# router compares when /develop is typed, and a literal stamp in the body of every skill
+# that compares a recorded version against the running one. Name, version, description and
+# author must agree across both manifests, and every stamp must agree with them.
+#
+# A body stamp exists because both sides of that comparison have to come from this plugin's
+# own shipped text. A version read from a recorded plugin root would compare a stale install
+# against itself and agree.
+#
+# The stamped skills are derived by reading the bodies and are never listed here: a stamp is
+# a line of the shape **devflow version: <version>** in a markdown file under
+# plugins/devflow/skills/. A fourth skill that gains one is checked the day it gains it, and
+# a tree where that shape matches nothing at all is a finding rather than a silent pass.
 #
 # The marketplace manifest must declare exactly one plugin. A second entry is not drift
 # this check can quietly tolerate: it would make "the manifests agree" a claim about an
@@ -102,6 +112,8 @@ for field in name version description author; do
 	fi
 done
 
+version=$(jq -r '.version // ""' <<<"$reference")
+
 config=$subject/docs/agents/workflow.json
 if [ ! -f "$config" ]; then
 	report 'docs/agents/workflow.json' 'the configuration is missing, so the version stamp the router compares does not exist'
@@ -109,7 +121,6 @@ elif ! jq -e . -- "$config" >/dev/null 2>&1; then
 	report 'docs/agents/workflow.json' 'the configuration is not parseable JSON'
 else
 	stamp=$(jq -r '.devflow.version // ""' -- "$config")
-	version=$(jq -r '.version // ""' <<<"$reference")
 	if [ -z "$stamp" ]; then
 		report 'docs/agents/workflow.json' 'no version stamp, so an upgrade would be silent rather than loud'
 	elif [ "$stamp" != "$version" ]; then
@@ -117,6 +128,30 @@ else
 	fi
 fi
 
-printf 'manifest-alignment: %s manifests and the version stamp checked, %s finding(s).\n' \
-	"${#values[@]}" "$findings"
+# The body stamps, found rather than listed. Reference files are read alongside SKILL.md,
+# because a version stated in a file a skill loads is a version a release has to move too.
+stamps=0
+skills=$subject/plugins/devflow/skills
+if [ ! -d "$skills" ]; then
+	report 'plugins/devflow/skills' 'the directory is missing, so no body stamp can be read'
+else
+	while IFS= read -r file; do
+		rel=${file#"$subject"/}
+		# Every stamp line in the body, so a second one cannot hide behind the first.
+		while IFS= read -r stated; do
+			stamps=$((stamps + 1))
+			if [ -z "$stated" ]; then
+				report "$rel" 'carries a version stamp with no version in it'
+			elif [ "$stated" != "$version" ]; then
+				report "$rel" "the body stamp is '$stated' but the manifests state '$version'"
+			fi
+		done < <(sed -n 's/^\*\*devflow version:[[:space:]]*\([^*]*\)\*\*.*/\1/p' -- "$file")
+	done < <(find "$skills" -type f -name '*.md' | sort)
+	if [ "$stamps" -eq 0 ]; then
+		report 'plugins/devflow/skills' 'no body carries a version stamp, so this check asserts nothing about them'
+	fi
+fi
+
+printf 'manifest-alignment: %s manifests, the configuration stamp and %s body stamp(s) checked, %s finding(s).\n' \
+	"${#values[@]}" "$stamps" "$findings"
 [ "$findings" -eq 0 ]

@@ -4,7 +4,7 @@ description: Configure a repository and this machine for the devflow workflow. R
 disable-model-invocation: true
 ---
 
-This is the one command an engineer runs. It refuses on two conditions that would otherwise
+This is the one command an engineer runs. It refuses on three conditions that would otherwise
 produce a half-working flow discovered much later, and then writes three tiers of state,
 skipping each tier that is already there.
 
@@ -14,33 +14,116 @@ stops halfway, run it again. If a plugin upgrade changes what setup writes, run 
 
 ## Finding this plugin's own files
 
-Commands below name scripts as `${CLAUDE_PLUGIN_ROOT}/scripts/<name>`. Claude Code substitutes
-that variable into this body before you read it, so look at the path in a command before running
-it: an absolute path means the variable was substituted, and a path still spelled as a variable
-means it was not.
+Commands below name scripts as `<plugin root>/scripts/<name>`. The plugin root is an absolute
+path this machine's record holds, acquired in refusal step 1 and read back from the literal path
+`$HOME/.devflow/machine.json`. Build the real path before running a command: nothing expands a
+placeholder in this body, and a command run with the placeholder still in it runs against a path
+with a hole in it, which the shell reports as a missing file.
 
-If you run the command with the variable unsubstituted, the shell expands it to nothing, the
-command becomes `/scripts/<name>`, and the shell reports a missing file. That is the symptom of
-an unset variable, named here in advance so it is not mistaken for a broken install. It is a
-known gap in this design, not a fault to work around by guessing at a path.
+No shipped script can read that record for you, because locating a shipped script is the thing
+the record is for. Read it yourself with `jq`, at that literal path, at the point of use. Refusal
+step 1 is where the root is acquired and where a stale one is caught.
+
+**devflow version: 0.3.0**. This skill's own stamp, shipped in its body because a version
+read from a recorded plugin root would compare a stale install against itself and agree.
+
+That stamp is one side of **every** version comparison this skill makes, and the record is never
+compared against itself. Two comparisons use it: against the version in the plugin manifest under
+a candidate root, which says whether that directory holds this version's install, and against the
+stamp inside the machine record, which says whether the record does. The pairing never made is
+the recorded stamp against the manifest under the recorded root. The same install wrote both, so
+they agree however stale they are, and the comparison passes while the flow runs the previous
+version's scripts against this version's skill bodies.
 
 ## Refuse first
 
 Onboarding this machine is three commands in this order, and the first two are the human's:
 
-1. Install the upstream skills: `npx skills@latest add mattpocock/skills -a claude-code`. This
-   plugin's phases name those skills and this plugin does not ship them.
+1. Install the upstream skills, so that **they resolve by bare name on this machine**. This
+   plugin's phases name those skills and this plugin does not ship them. That requirement is
+   the same on every host. The command that satisfies it is not, which is why none is written
+   here.
 2. Run `setup-matt-pocock-skills` in the repository. It carries a key that stops any skill from
    loading it, so the human runs it the same way this skill is run, not you.
 3. Run `/setup-devflow`, which is this skill.
 
-Each check below asserts one of the first two. Both run before anything is written, in the order
-given, and either one ends the run. Report what the check found, print the three steps above so
-the human can see which one they are on, and stop. Do not offer to continue, and do not write a
-single file: a refused run leaves this machine and this repository exactly as it found them, and
-running the skill again once the named step is done is the whole recovery.
+**Step 1's command is printed beside it, and only where this run can read it.** It is slot 6
+of the host's adapter, so reading it needs both a plugin root and a host declared on this
+machine, and a refusal at step 1 or step 2 may have neither. Take the three cases as they come:
 
-### 1. The upstream setup has not run here
+- **This run has a plugin root and `$HOME/.devflow/machine.json` records a `hostSlug`.** Read
+  slot 6 from that host's adapter, `<plugin root>/adapters/<slug>.md` where the plugin ships
+  one and `$HOME/.devflow/adapters/<slug>.md` where it does not, and print the command it gives
+  under step 1.
+- **Slot 6 answers that this host has no equivalent.** Say that in one line: devflow has no
+  install command for this host, and the requirement stands as step 1 words it. Silence here
+  reads as a command somebody forgot to print.
+- **No root yet, no recorded host, or no adapter for the one recorded.** Print step 1 as it
+  stands and say no host is declared on this machine yet, so there is no command to give. The
+  requirement is the part that is true everywhere, which is why it is the part always printed.
+
+Three checks run below, in the order given, all of them before anything is written, and any one
+of them ends the run. Report what the check found, print the three steps above so the human can
+see which one they are on, and stop. Do not offer to continue, and do not write a single file: a
+refused run leaves this machine and this repository exactly as it found them, and running the
+skill again once the named step is done is the whole recovery.
+
+### 1. The plugin root cannot be acquired
+
+Every script devflow ships is reached at a path built from the plugin root, so a run without it
+cannot perform the checks the other two refusals depend on. That is why this one is first.
+
+**With no record on this machine, ask the human.** One question, asked once:
+
+> Where are the devflow plugin's own files on this machine? Give the absolute path of the
+> directory that holds `.claude-plugin/plugin.json`.
+
+Asking is the design here rather than a fallback. The method for finding the plugin root is one
+of the things a host adapter answers, and every adapter sits under the plugin root, so reading
+one to find the root would need the root already. The human breaks that loop once per machine.
+The answer is cached, and nothing asks again while it holds.
+
+**Assert the answer before anything uses it**, both of these, in order:
+
+1. `<answer>/.claude-plugin/plugin.json` exists. A directory with no plugin manifest under it is
+   not a devflow plugin root, whatever else is in it.
+2. That manifest's `version` equals this skill's own body stamp above. A path left pointing at
+   the previous version's directory still resolves, still holds a manifest and still runs
+   scripts. That is the failure this assertion exists for, and it is why the path is checked when
+   it is given rather than by whatever command first uses it.
+
+**Either failure refuses, in one message rather than two.** "Nobody has told devflow how to find
+the plugin on this host" and "the path given is not a current devflow install" are one problem to
+the person standing there, which is that this machine cannot reach the plugin's files, and
+splitting them asks them to tell apart two states they would act on identically. Print the path
+that was tried, what was found at it, and both versions where the comparison is the half that
+failed.
+
+**With a record on this machine, no human.** Read `$HOME/.devflow/machine.json` and compare its
+`devflowVersion` against this skill's body stamp.
+
+- **They agree.** The install record is current. Take `pluginRoot` from it and run assertion 1
+  against that path, because a directory recorded weeks ago can have been removed since. Ask
+  nothing.
+- **They differ, or there is no record at all.** The install record is stale or absent, and a
+  plugin upgrade is the usual cause. Re-acquire: where `acquisitionMethod` holds a method, follow
+  it and assert the result exactly as above; where it holds `ask-the-human`, ask the question
+  above. The record is rewritten later in the run, once the host is known.
+
+The method is cached so that an upgrade costs nobody a question. Where the chosen adapter answers
+slot 1 by saying the host has no equivalent, there is no method to re-run and the human is asked
+again on every upgrade. That is a real answer with a stated price, and the adapter says so rather
+than leaving it to be discovered on the second install.
+
+**Setup has no degraded mode, and that is deliberate.** devflow's promise is that a missing
+capability disables one phase and leaves the rest working, so a flat refusal here reads as that
+promise being broken. It is not. The promise governs the **gating** capabilities, each of which
+costs exactly one phase. Reaching the plugin's own files is a **required** capability, C3: with
+no plugin root there is no script to run and no check to report, so there is no reduced devflow
+left to offer and a run that continued would only move the failure somewhere less legible. Say
+this in the refusal. A reader who is not told reconciles the two by assuming the tool is broken.
+
+### 2. The upstream setup has not run here
 
 This skill configures a repository that the upstream skills already understand. They learn the
 repository's issue tracker from the tracker document that **`setup-matt-pocock-skills`** writes,
@@ -51,12 +134,12 @@ Refuse when the repository has no `docs/agents/issue-tracker.md`, and name
 with no upstream install fails this check too: that skill cannot have run where it is not
 installed, and naming it on its own sends the human after a command they do not yet have.
 
-### 2. The upstream dependency is not satisfied
+### 3. The upstream dependency is not satisfied
 
-Run, before anything is written:
+Run, before anything is written, at a path built from the plugin root step 1 acquired:
 
 ```
-${CLAUDE_PLUGIN_ROOT}/scripts/scan-skill-environment.sh <repository root>
+<plugin root>/scripts/scan-skill-environment.sh <repository root>
 ```
 
 It walks the real skill directories on disk and asserts the four ways the dependency can be
@@ -75,12 +158,20 @@ Act on the exit code:
   that did not run is not a scan that passed, and treating it as one restores exactly the silent
   failure the probe exists to remove.
 
-On either refusal, print two things: the install command below, then **the probe's own output,
+On either refusal, print two things: the requirement, then **the probe's own output,
 verbatim**. Write nothing in their place.
 
-```
-npx skills@latest add mattpocock/skills -a claude-code
-```
+The requirement is the one step 1 of the onboarding list states, in the same words: **the
+upstream skills this plugin loads resolve by bare name on this machine.** It holds on every
+host, so it is printed on every refusal here.
+
+The command that satisfies it on this host is printed in addition, under the same three cases
+the onboarding list sets out: slot 6's command where this run has a plugin root and a recorded
+`hostSlug` whose adapter answers with one; the absence said out loud where that adapter answers
+that this host has no equivalent; and the requirement alone, with the undeclared host named as
+the reason, where there is nothing to read. Host selection happens later in this run, so a
+first run on a machine reaches this refusal with no declaration and prints the requirement
+alone. That is the honest output, not a gap.
 
 Each finding line already names its kind, its subject and what failed it; a summary written here
 would be a second description of the same facts, free to drift from the script that is the
@@ -100,6 +191,95 @@ skills directory by an installer script, and a project-scoped copy inside the re
 Removing is the human's act. Do not remove, move or rename anything outside the repository being
 configured.
 
+## Choose the host
+
+Host selection sits here, after both upstream checks and still before anything is written, for
+one reason: nothing before this point reads an adapter, and a human whose host has no adapter
+should learn in the same run that their upstream install is wrong too. Moving selection earlier
+buys nothing and costs them a second round trip through a refusal they could have had at once.
+
+**List what is on disk, and name no host.** Enumerate the files in two directories:
+
+- `<plugin root>/adapters/`, the adapters this plugin ships.
+- `$HOME/.devflow/adapters/`, the adapters written on this machine.
+
+Each filename without its `.md` suffix is that host's **slug**. That is the whole of the
+detection. This skill counts files and reads none of their contents until one is chosen, and it
+names no host anywhere, because a brand marker here would close the one set the design keeps
+open.
+
+**Ask the human to pick**, listing the slugs with where each was found, and offer **none of
+these** as the last option.
+
+**Where a slug has both a shipped and a local adapter the shipped one wins, and setup says so**,
+naming the local path it ignored. A local copy is usually an earlier edit of a file that has
+since shipped, and a stale local file quietly beating a shipped fix is the one outcome worth a
+line of output. Report which file was used and which was ignored. Do not delete, move or rename
+the ignored one: it is the human's file, and it may be the draft of the next shipped adapter.
+
+**"None of these" is a real answer. It refuses, and the refusal is an on-ramp.** A host nobody
+has written an adapter for is a normal state rather than a fault. Say three things:
+
+1. **The file to write:** `$HOME/.devflow/adapters/<slug>.md`, where the slug is whatever they
+   want their host called. Nothing registers it, because setup lists the directory.
+2. **What it has to answer:** the slots, enumerated in
+   [references/slots.md](references/slots.md), one `### Slot N: <name>` heading each, every slot
+   answered explicitly, including answering that this host has no equivalent. Silence is not an
+   answer there, and that file says why.
+3. **What it does not have to do:** nothing is rewritten at install time and no code is involved.
+   A working adapter is a prose file, and one that works is worth sending back so the next person
+   on that host is not writing it again.
+
+## The machine record
+
+With the host chosen, read its adapter and write one file. This is the last thing before the
+tiers, and the only place a host decision is recorded on this machine.
+
+**Read the adapter once, here, and take two things from it.**
+
+- **Slot 1's method**, which goes into the record so the next run re-acquires the root with no
+  human in it. The slots and what each one means belong to the core, in
+  [references/slots.md](references/slots.md); the adapter holds this host's answers and nothing
+  else.
+- **The capability declarations.** Where the adapter answers `present` or `absent`, take that
+  answer and do not ask. Where it leaves one `unknown`, ask the human and record what they say.
+  An adapter that answered is never re-asked, because having the host's own answers written down
+  once is the whole point of the file. A declaration left `unknown` and never asked about becomes
+  a permanent degrade on a host that would have run the phase.
+
+**Write `$HOME/.devflow/machine.json`**, JSON, at that literal path. Every reader finds it with
+nothing but `$HOME` and `jq`, and no shipped script can read it for them, because finding a
+shipped script is what the record answers.
+
+```json
+{
+  "pluginRoot": "/absolute/path/to/the/plugin/root",
+  "acquisitionMethod": "claude plugin list --json, read installPath for the devflow entry",
+  "devflowVersion": "0.3.0",
+  "hostSlug": "claude-code",
+  "capabilities": {}
+}
+```
+
+| Field | Holds |
+| --- | --- |
+| `pluginRoot` | the absolute path step 1 acquired and asserted |
+| `acquisitionMethod` | slot 1's method as the adapter states it, or the literal `ask-the-human` where the host has no equivalent |
+| `devflowVersion` | this skill's body stamp, which is the invalidation for the two fields above |
+| `hostSlug` | the slug chosen above, which is the adapter's filename without its suffix |
+| `capabilities` | only the declarations a human answered, keyed by capability, and `{}` when the adapter answered them all |
+
+The values shown are one host's and are not a default. Write what this run acquired.
+
+**Nothing else goes in the file**, and **no slot value is cached** in it: a second copy of an
+adapter's answer goes stale with nothing to catch it, because the stamp invalidates on a plugin
+upgrade only and a local adapter is edited with no upgrade in sight. The price is that a later
+phase reads the adapter as well as the record, which is one more file read per run.
+
+The first three fields are the **install record**, and the stamp governs exactly those three. The
+slug and the declarations describe this machine and survive an upgrade, which is why the record
+outlives the install record inside it.
+
 ## How every tier writes
 
 - **Show the diff before writing.** Every file this skill creates or changes is shown as a diff
@@ -111,6 +291,16 @@ configured.
 - **A tier already present is skipped**, and the run says which tiers it skipped. The second
   engineer in an already-configured repository therefore runs the same command and writes the
   machine-local tier alone, with no second command and no flag to pass.
+- **Every tier detects its own state**, which is what keeps re-running the whole recovery. No
+  tier reads the record to decide whether it has already run. The record says where the plugin is
+  and which host this is, and nothing more.
+- **A hardening step this host cannot take skips, warns and continues.** The keys setup writes
+  into the host's settings are not capabilities. They are one host's spelling of a rule devflow
+  states in prose anyway, attached to a capability the host already has. Where the adapter
+  answers that this host has no surface for one, write nothing, warn, and **name the exposure
+  rather than the missing key**: `refs/stash` is shared across every worktree of this repository,
+  so a stash one worker pushes is a stash another can pop. An engineer can act on that sentence.
+  "The deny key could not be written" tells them nothing they can do anything with.
 
 ## The tiers
 
@@ -144,17 +334,22 @@ at the head of the run belongs to the same set and has already run by the time t
 upstream upgrade can move a skill or a key under a repository that has not changed, so it is
 asserted on every run rather than once at onboarding.
 
-- **Check the committed host settings are as specified.** Read the repository's
-  `.claude/settings.json` and assert two things: `Bash(git stash:*)` is present in
-  `permissions.deny`, and `worktree.symlinkDirectories` is present and empty unless the user
-  asked for values in it. Report each as a line, naming the file. A merge that silently dropped
-  one of these leaves worktrees sharing a stash with no warning anywhere else.
-- **Check the executable bit survived.** Assert it on the scripts in this plugin's own scripts
-  directory and on every file the installer copied, in **both** destinations: the code
+- **Check the committed host settings are as specified.** Read the committed settings file slot 2
+  names and assert two things: the deny entry slot 3 gives is present, and the worktree key slot
+  4 gives is present with the value that leaves each worktree its own directories, unless the
+  user asked for other values in it. Report each as a line, naming the file. A merge that
+  silently dropped one of these leaves worktrees sharing a stash with no warning anywhere else.
+  Where the adapter answered that this host has no equivalent, say the check does not apply here
+  and repeat the exposure rather than reporting a pass.
+- **Check the executable bit survived.** Assert it on the scripts in the scripts directory under
+  the plugin root and on every file the installer copied, in **both** destinations: the code
   repository and the artifact repository clone. A check without the bit
   is unrunnable, and the contract makes an unrunnable check a **failure** rather than a skip, so
   a lost bit turns every gate red at the worst moment. Report the paths that lack it.
-- **Tell the user to restart Claude Code.** It does not re-read plugin or project configuration
-  mid-session, so the session that ran this skill is the one session in which none of what was
-  just written is in effect. An engineer who keeps working in it sees a repository that shows no
-  sign of the setup and reads the install as having failed.
+- **Tell the user how to make what was written take effect.** Most hosts do not re-read plugin or
+  repository configuration mid-session, so the session that ran this skill is the one session in
+  which none of what was just written is in effect. An engineer who keeps working in it sees a
+  repository that shows no sign of the setup and reads the install as having failed. Slot 7 says
+  what this host asks for and whether anything short of a full restart is enough: print that
+  answer in the host's own words. Where the adapter answers that this host re-reads its
+  configuration as it changes, tell nobody to restart, and say that it is already live.

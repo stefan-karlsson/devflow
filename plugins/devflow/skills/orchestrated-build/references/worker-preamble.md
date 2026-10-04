@@ -17,6 +17,25 @@ not go looking for an ambient file that repeats them, because there is not one.
 
 ## Your first act, before reading anything else
 
+Before the reset, prove you are not standing in the main checkout:
+
+```
+git rev-parse --show-toplevel
+```
+
+**A path equal to the `Repository root:` in the header above is a hard failure.** Report
+that you were not isolated, quote both paths, and do **no work at all**: no reset, no
+branch, no commit. The reset below is `--hard`, and in the main checkout it discards an
+engineer's uncommitted work before anyone can see that the spawn went wrong. This is the
+last moment at which that is preventable, and preventing it is your side of the check: the
+orchestrator verifies isolation from its side afterwards, which only ever reports damage.
+
+Equality is the right test because git answers with the main checkout's root from anywhere
+inside it, so a host that dropped you into a subdirectory of the main checkout fails this
+check too.
+
+Only then:
+
 ```
 git reset --hard <the integration branch named in the header above>
 git log --oneline -1

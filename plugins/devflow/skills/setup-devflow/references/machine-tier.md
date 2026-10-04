@@ -1,6 +1,11 @@
 # The machine-local tier
 
-State scoped to this machine, for this repository. It is what the second engineer in an
+State scoped to this machine. Most of it is scoped to this repository as well, and the machine
+record is not: `$HOME/.devflow/machine.json` holds where this machine's host put the plugin's
+files and which host this is, which are facts about the install and about the machine rather than
+about any repository. Setup writes it before the tiers run, and this tier does not touch it.
+
+Everything below is the per-repository half, which is what the second engineer in an
 already-configured repository writes, and all they write. None of it is committed: six engineers
 have six home directories, so an absolute path in a committed file would not reproduce for
 anyone else.
@@ -53,19 +58,26 @@ commands.
 
 ## The additional-directory entry
 
-Claude Code reaches a second directory only when that directory is named in the repository's
-settings. Add the clone's absolute path to the additional-directories list in
-`.claude/settings.local.json`, creating the file when it is absent and merging into it when it is
-not. The committed settings file is the repository tier's and is not touched here.
+A session reaches a directory outside its own repository only where the host has been told to.
+Slot 5 of the chosen adapter gives the key and whether its value is one path or a list, and slot
+2 gives the machine-local settings file it belongs in. Add the clone's absolute path there,
+creating the file when it is absent and merging into it when it is not. The committed settings
+file is the repository tier's and is not touched here.
 
-**Already present** when the list carries that path.
+**Already present** when that key already carries the path.
+
+Where slot 5 answers that this host reaches any path without being told, there is nothing to
+write and the step is skipped, saying so. Where it answers that this host reaches nothing outside
+the repository, write nothing, warn, and name the exposure rather than the key: an issue is
+published out of the artifact clone, so nothing on this machine can publish one.
 
 ## The machine-local settings file is not committed
 
-`.claude/settings.local.json` carries this machine's absolute paths and this machine's choices,
-neither of which reproduces for anyone else. Check that the repository's ignore rules already
-cover it. Where they do not, add it to the repository's machine-local exclude file rather than to
-a committed ignore file, which keeps a machine-local decision machine-local.
+The machine-local settings file slot 2 names carries this machine's absolute paths and this
+machine's choices, neither of which reproduces for anyone else. Check that the repository's
+ignore rules already cover it. Where they do not, add it to the repository's machine-local
+exclude file rather than to a committed ignore file, which keeps a machine-local decision
+machine-local.
 
 ## What installing this costs on every turn
 

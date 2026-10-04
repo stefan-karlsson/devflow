@@ -13,6 +13,11 @@ file and holds no rules of its own.
   under `skills/`, where the default scan reaches it.
 - Our skills load upstream's installed skills for judgement and never restate them.
 - One README, at the repository root. The plugin has none of its own.
+- One adapter per verified host, shipped under the plugin at `plugins/devflow/adapters/`, and
+  that directory and the README's host table are the same set, checked in both directions. A
+  host named in one place and not the other is either a row promising answers nobody can find
+  or answers no reader is told to look for, and both read from outside as support for a host
+  nobody verifies.
 
 ## Rules
 

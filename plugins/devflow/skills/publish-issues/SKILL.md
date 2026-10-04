@@ -162,9 +162,41 @@ Load `review-draft-issue` in a **fresh subagent** carrying none of this session'
 That is the whole point: the human about to approve this text watched it being written, and
 the review exists to put a reader in front of it who did not.
 
-The review **never blocks**. It produces findings, it changes nothing, and a finding is not a
-veto. Carry its output to the human whether it found something or not. A review that fails to
-run is reported as not run and does not stop the draft.
+**The attempt is the test.** The one thing this step looks up is the `absent` declaration below,
+and it reads the machine record only to find it. Everything else it learns, it learns by
+spawning and then reporting how the review actually ran. The attempt is a valid test here
+because the thing attempted is provided by the host and its absence errors, so a host that
+cannot spawn says so instead of silently running the review in this session.
+
+Deciding from a declaration instead would be worse in the ordinary case. A host whose C5 answer
+is `unknown` is a host nobody has written down, not a host that cannot spawn, so treating
+`unknown` as a reason to degrade would skip a review that works on most hosts. The attempt costs
+one failed call where it is wrong and nothing anywhere else. This is deliberately unlike C6,
+which does get the full declaration treatment.
+
+**The one exception is an `absent` declaration.** Read the slug from the machine record, then
+read C5 from under the `## Capabilities` heading of `<plugin root>/adapters/<slug>.md` where the
+plugin ships one for that slug and `$HOME/.devflow/adapters/<slug>.md` where it does not:
+
+```
+jq -r '.hostSlug // empty' "$HOME/.devflow/machine.json"
+```
+
+Where that adapter declares C5 `absent`, skip the attempt and report `review not run, C5 absent`.
+That is the only declaration this skill reads, and it reads it only to avoid a call already known
+to fail. No slug recorded, no adapter for the one recorded, no C5 answer, or any answer other
+than `absent`: attempt the spawn.
+
+The review **never blocks**, however it ran. It produces findings, it changes nothing, and a
+finding is not a veto. Carry its output to the human whether it found something or not. A spawn
+that fails is reported as `review not run` with what the host said, and the draft goes on to the
+human gate. A review that did not run leaves the draft one reader short; it does not fail the
+publish.
+
+**One state, one phrase.** `review not run` is the phrase, in the words the handover already
+uses, wherever that state appears: at the human gate, in the line for a draft that was not
+published, and in the line for one that was. Nothing may be left to silence here, because
+silence reads as a review that ran and found nothing.
 
 ### 3. The human gate
 
@@ -176,7 +208,7 @@ Show, for the one draft:
 
 - the summary exactly as it will be sent, after the ordinal is stripped;
 - the gauntlet verdict, including `not run` when that is what it was;
-- the review's findings, verbatim;
+- the review's findings verbatim, or `review not run` and why, when it did not;
 - the parent epic key, the project and the issue type;
 - that no label and no status transition will be written.
 
@@ -304,6 +336,7 @@ Effort: <slug>
 Spec epic: <KEY> (created | reused)
 
   <NN-slug>: <KEY>
+  <NN-slug>: <KEY>, review not run, <spawn failed, <what the host said> | C5 absent>
   <NN-slug>: not published, <gauntlet failed | declined | review not run and declined | ...>
   <NN-slug>: already published as <KEY>
 
@@ -315,3 +348,7 @@ Not published: <count>. <What the human has to do next.>
 
 Report gauntlet output verbatim. A draft that was skipped says why in the words of the gate
 that skipped it, so the human fixes the draft rather than the report.
+
+A published draft whose review did not run carries that on its own line, in the same words. The
+review is non-blocking and nothing else in this run records that a reader was missing, so the
+handover is the only place it can be said.

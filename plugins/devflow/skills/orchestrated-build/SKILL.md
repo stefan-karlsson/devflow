@@ -1,6 +1,6 @@
 ---
 name: orchestrated-build
-description: Parent-side rules for building many tickets at once, each worker isolated in its own git worktree, merging into one integration branch as they finish. Use when a spec's tickets are ready to build and the session you are in is the user's own unisolated session in the main checkout. Covers spawning isolated workers, the branch-and-SHA report contract, running the ticket gauntlet in a worker's worktree as the gate, fast-forward merges, the two retry budgets, worktree cleanup and what to hand a human. Another skill can load this one, and a human can still type it.
+description: Parent-side rules for building many tickets at once, each worker isolated in its own git worktree, merging into one integration branch as they finish. Use when a spec's tickets are ready to build and the session you are in is the user's own unisolated session in the main checkout. Covers spawning isolated workers, the branch-and-SHA report contract, verifying each worker's isolation in git's own worktree record before anything else, running the ticket gauntlet in that worktree as the gate, fast-forward merges, the two retry budgets, worktree cleanup and what to hand a human. Another skill can load this one, and a human can still type it.
 ---
 
 # Orchestrated build
@@ -17,6 +17,9 @@ This is a procedure. It is loaded into the orchestrator session before the human
 upstream's installed build command, and the rules below govern the loop that command runs.
 Everything here is **parent-side**. The worker's rules are a separate file, for a reason
 given below.
+
+**devflow version: 0.3.0**. This skill's own stamp, shipped in its body because a version
+read from a recorded plugin root would compare a stale install against itself and agree.
 
 ## The one thing that varies between repositories
 
@@ -92,16 +95,153 @@ it differs from what the worker reported, do not merge, do not pick the one that
 and do not reconcile them yourself. One of the two is describing a different worker. Say
 which values disagreed, keep the worktree, and ask the human.
 
+## Finding this plugin's own files
+
+Where a section below runs a script this plugin ships, it names it as
+`<plugin root>/scripts/<name>`. The plugin root is an absolute path this machine's record
+holds. Read it yourself, with `jq`, at that literal path, and build the real path at the point
+of use. This sits beside the section that needs it, but the record is read at the **start of
+the run**, before the first worker is spawned: a record that is missing or stale is a fault of
+this machine rather than of any worker, and finding that out after four workers have reported
+wastes all four.
+
+```
+jq -r '.pluginRoot' "$HOME/.devflow/machine.json"
+jq -r '.devflowVersion' "$HOME/.devflow/machine.json"
+```
+
+No shipped script can read the record for you, because locating a shipped script is the thing
+the record is for.
+
+| What you find | What you do |
+| --- | --- |
+| No file at that path | **Abort the run.** Setup has not run on this machine. Name `setup-devflow`. |
+| `devflowVersion` differs from this skill's body stamp above | **Abort the run.** The record was written by a different version of devflow. Name `setup-devflow` and say both stamps out loud, the recorded one and this skill's own. |
+| They agree | Take `pluginRoot` and build each path from it. |
+
+Neither case resolves the recorded root anyway and carries on. A root left pointing at the
+previous version's directory still exists and its scripts still run, which is the whole reason
+the stamp is compared rather than the directory tested.
+
+## Whether this loop runs on this host
+
+C6, spawning a subagent isolated in its own git worktree, is what this loop needs, and it is
+the one thing in devflow gated on a declaration rather than on an attempt. Read it at the
+**start of the run**, under the `## Capabilities` heading of this host's adapter. Read the
+slug from the record you already have open, then read the answer from
+`<plugin root>/adapters/<slug>.md` where the plugin ships one for that slug and
+`$HOME/.devflow/adapters/<slug>.md` where it does not:
+
+```
+jq -r '.hostSlug // empty' "$HOME/.devflow/machine.json"
+```
+
+No slug recorded, or no adapter for the one recorded, reads as `unknown`: nobody has declared
+this host. Where the adapter answers `unknown` and the record's `capabilities` carries a C6
+answer a human gave at setup, that answer stands: it is the same declaration, written down
+later.
+
+| C6 | What you do |
+| --- | --- |
+| `present` | Run this loop. |
+| `unknown` | **Degrade.** Build the tickets inline, one at a time in this session with nothing spawned, and say C6 reads `unknown` on this host and that is why. |
+| `absent` | **Degrade.** The same, naming `absent`. |
+
+`unknown` degrades alongside `absent` rather than being settled by the attempt, which is how
+the issue review treats its own capability a phase earlier. What differs is the price of being
+wrong. A spawn that was not isolated is discovered only after the worker has reset and
+committed in the engineer's own checkout, so there is no cheap attempt to learn from here, only
+an expensive one.
+
+**An absent C6 is about C6 and nothing else.** It degrades this loop, and it does not skip the
+issue review inside `publish-issues`, which is gated on its own capability and reads its own
+answer. Inferring one capability's absence from another's would let a single unanswered adapter
+line degrade a phase the host runs perfectly well.
+
+## The isolation check
+
+**Run this the moment a worker's report arrives, before anything else you do with it.** The
+position is the rule: it runs first so that a bad path never costs a full check run and never
+points a gauntlet at the main checkout. The disagreement rule above costs one merge; this one
+costs the run.
+
+In your own checkout:
+
+```
+<plugin root>/scripts/worktree-isolation.sh <branch> <reported SHA>
+```
+
+Two arguments, the branch and the SHA the worker reported, and no others. Pass the SHA exactly
+as the worker printed it: an abbreviated one reads as exit 3 rather than a match. The script
+inspects `DEVFLOW_REPOSITORY` and falls back to the working directory, which is your own
+checkout, so the ordinary call sets no variable.
+
+It looks the worktree up **by branch in git's own record**, which is the difference between
+reasoning about what git knows and reasoning about what the worker claimed.
+
+| Exit | What it found | What you do |
+| --- | --- | --- |
+| 0 | A worktree holds the branch, it is not the main checkout, and its HEAD is the reported SHA. The path is on stdout | Use **that path** as the gauntlet subject, and go on to the gate |
+| 1 | The branch is checked out in the main checkout | **Abort the run** |
+| 2 | No worktree in this repository holds the branch | **Abort the run** |
+| 3 | Isolated, but HEAD is not the reported SHA | Abort **that merge**, keep the worktree, ask the human |
+| 4 | The check could not run, its reason on stderr | **Abort the run**, because an unverified spawn is not a verified one |
+
+**The gauntlet subject is the path the lookup returned**, never the path the worker reported.
+The worker's `Worktree:` line is a cross-check only: say so where it differs, and run the
+gauntlet in the returned path regardless. A worker reporting a path it never looked at must not
+be able to steer where a check runs, and a report with no `Worktree:` line is no longer a case
+this skill rules on.
+
+Exit 2 aborts the run rather than the one ticket because a branch no worktree holds is not an
+isolated worker whose worktree went missing. It is a worker that was somewhere this repository
+cannot see, and a worker in a separate clone must not be mistaken for an isolated one.
+
+Exit 3 costs one merge rather than the run. It is the one-worker severity this skill already
+applies to a branch or a SHA disagreement, and a run must not abort for a fault whose blast
+radius is one branch.
+
+### Aborting the run
+
+**Report the state of the main checkout first**, before the tidy worktrees, because the human
+should read about the damaged thing before the intact ones. Name the branch the unisolated
+worker reset and committed on, what your own checkout's HEAD and working tree are now, and what
+was uncommitted there before the run as far as you can still say.
+
+Then:
+
+- **Spawn nothing further and merge nothing further.** Keep every branch and every worktree.
+- **Stop the in-flight workers where the host allows it, and name the ones you could not**, each
+  with its branch. Say their writes are landing in the main checkout, and say plainly that
+  stopping limits further writes and undoes none. A best-effort stop is not containment and must
+  not be reported as one.
+- **No automatic fallback to the inline build.** It would build in the checkout the unisolated
+  worker just reset. Name it as the human's next step after they have cleaned up, and leave the
+  typing to them.
+- **No retry budget.** Not a second attempt and not a third: the tree a retry would run in is
+  the compromised one.
+
+**Never write a capability declaration back.** One run's observation does not overrule the file
+the verification discipline is built on, and the observation is ambiguous in any case. An
+unisolated spawn is either a host that accepted the isolation argument and ignored it, or a call
+of yours that dropped it. Name both causes, name the adapter file read above as the file a human
+would edit to change the declaration, and change nothing yourself.
+
+**The ordinal changes the diagnosis, not the action.** On a first spawn the two causes are
+indistinguishable, and the report says so. On a fifth, after four spawns this check verified,
+the host is exonerated and the call convicted: it honoured the argument four times. One
+sentence of the report differs, and everything else about the abort is the same.
+
 ## The gate
 
 **Run the `ticket` gauntlet in the worker's worktree. Always.** Every worker, every time,
 whatever the worker already ran and whatever it reported.
 
-Load the `gauntlet` skill by bare name, give it the run point `ticket` and the worker's
-worktree path as the subject. You are the only thing in the flow that runs a gauntlet. An
-implementer reporting its own check results is making a claim, and a claim is not a gate: the
-whole point of running it yourself, in that worktree, is that the result is observed rather
-than relayed.
+Load the `gauntlet` skill by bare name, give it the run point `ticket` and the worktree path
+the isolation check returned as the subject. You are the only thing in the flow that runs a
+gauntlet. An implementer reporting its own check results is making a claim, and a claim is not
+a gate: the whole point of running it yourself, in that worktree, is that the result is
+observed rather than relayed.
 
 A `not run` verdict is not a pass. If the repository declares nothing for `ticket`, say so in
 the closing report rather than letting silence read as green.

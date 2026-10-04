@@ -9,15 +9,19 @@
 # named with no message. A second copy resolves to whichever one the host picked. This
 # script turns all four into an exit code, which is the only form the flow can act on.
 #
-# The subject is bare-name resolution and nothing else. A bare name is the frontmatter
-# name:, not the directory basename: the two differ in practice and a host resolves the
-# frontmatter one.
+# What it asserts is what it can see: it walks the roots it was given and reports what
+# is present under them, keyed by the frontmatter name: rather than the directory
+# basename, because the two differ in practice and a host resolves the frontmatter one.
+# It never establishes that this host resolves anything by bare name. That is capability
+# C1, a per-host fact the manual host pass establishes and this script does not, so a
+# clean exit here means the files are on disk under those roots and no more than that.
 #
-# DEVFLOW_SKILL_ROOTS, colon-separated, replaces the roots that are scanned, and is what
-# makes this script testable against fixtures rather than only against one laptop.
-# Unset, the roots are the real ones: $HOME/.agents/skills and $HOME/.claude/skills,
-# plus the repository's own .claude/skills and .agents/skills when a repository root is
-# given.
+# DEVFLOW_SKILL_ROOTS, colon-separated, replaces the roots that are scanned. It is how
+# an engineer whose host reads skills from somewhere else points this probe at the roots
+# their host actually reads, and it is what makes the script testable against fixtures
+# rather than only against one laptop. Unset, the roots are the real ones:
+# $HOME/.agents/skills and $HOME/.claude/skills, plus the repository's own
+# .claude/skills and .agents/skills when a repository root is given.
 #
 # Plugin caches are not walked, and no plugin manifest is read. Claude Code namespaces a
 # plugin's skills as <plugin>:<name>, so they are unreachable by bare name and cannot be
@@ -250,12 +254,13 @@ for name in "${loaded_skills[@]}"; do
 	fi
 done
 
-# One real directory, reachable through however many roots, is one copy. The supported
-# install route, npx skills@latest add mattpocock/skills -a claude-code, puts the skills
-# under ~/.agents/skills and symlinks ~/.claude/skills/<name> at them, so on a correct
-# install every one of these names is reachable through two roots. A rule that compared
-# root directories would call all nineteen doubled and refuse on a machine that is right,
-# which is why the candidates are resolved with pwd -P and counted by real path.
+# One real directory, reachable through however many roots, is one copy. Upstream's
+# installer puts the skills under one root and symlinks the host's own root at them, one
+# link per skill, so on a correct install every one of these names is reachable through
+# two roots. A rule that compared root directories would call all nineteen doubled and
+# refuse on a machine that is right, which is why the candidates are resolved with pwd -P
+# and counted by real path. The README names the install command, per host, because the
+# flag that picks the host's root is the one part of it that is not the same everywhere.
 #
 # The rule covers the names this flow resolves and no others. A second copy of some other
 # skill is somebody else's configuration and nothing devflow would load.

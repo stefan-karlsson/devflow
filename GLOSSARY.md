@@ -6,12 +6,71 @@ the engineer's own installation of those skills, configured per repo.
 ## Language
 
 **Configuration surface**:
-A place configuration lives, identified by who reads it. The effort has three: prose under
-`docs/agents/`, read by an agent; data in `docs/agents/workflow.json`, read by an agent and
-by a shell script; and host keys in the target repo's `.claude/settings.json`, read by
-Claude Code itself. A value belongs to exactly one surface, chosen by its reader rather
-than by its subject.
+A place configuration lives, identified by its reader and its scope together. The effort has
+four: prose under `docs/agents/`, read by an agent, scoped to the repository; data in
+`docs/agents/workflow.json`, read by an agent and by a shell script, scoped to the repository;
+host keys in the target repo's `.claude/settings.json`, read by the host itself; and devflow's
+own machine state, read by an agent, scoped to this install rather than to any repository. A
+value belongs to exactly one surface, chosen by its reader and its scope rather than by its
+subject. The reader alone stopped discriminating once two surfaces shared one.
 _Avoid_: config file, config location, settings
+
+**Host**:
+The program a skill runs inside: it resolves skills by name, runs the commands in their
+bodies and spawns their subagents. Described by what it provides rather than by what it is
+called, because the set of them is open and a name is not a capability.
+_Avoid_: platform, client, runtime, agent harness, Claude Code
+
+**Host capability**:
+One thing a host provides, admitted to the contract only because its absence has a named,
+observable symptom. Either required, so devflow does not run without it, or gating, so its
+absence disables exactly one phase and nothing else.
+_Avoid_: feature, requirement, dependency, support
+
+**Capability contract**:
+The six host capabilities devflow requires, stated in full in the README beside the verified
+hosts, each with the symptom of its absence. It describes devflow rather than the world, so
+it stays true without maintenance, and it is what lets a reader on an unnamed host judge
+their own. Distinct from the delivery contract, which governs only how files reach a place
+the host reads.
+_Avoid_: host requirements, support matrix, compatibility list
+
+**Verified host**:
+A host the owner has run the manual pass against, named in the README with the release the
+pass was run on, so a skipped pass goes visibly stale rather than silently false. The only
+tier there is: an unverified host is not a lesser tier, it is unnamed. Membership is a
+staffing fact, since a host joins by acquiring a standing verifier and leaves the release
+that person stops, and the shipped adapter for it exists over exactly that span.
+_Avoid_: first-class host, supported host, best-effort, tested platform
+
+**Host adapter**:
+The translation from an intent devflow states to the spelling one host uses for it, written as
+prose under one heading per slot, alongside a separate list of the host's answers for the gating
+capabilities. It answers a fixed list of slots the core owns, and it answers every slot
+explicitly, including answering that this host has no equivalent, because silence would conflate
+a capability a host lacks with one nobody recorded. It carries values, schema, and, where the
+answer differs per install rather than per host, the method of obtaining a value in place of the
+value: the intent, and the outcome a human is asked to reach, stay in the core. One ships per
+verified host and one may be written on a machine for a host nothing promises anything about;
+where both exist the shipped one wins and says so, since a silent override would let a stale
+copy beat a fix.
+_Avoid_: host config, shim, host module, per-host override, host branch
+
+**Install record**:
+The note of where this machine's host put the plugin's files and of the method that obtained it,
+stamped with the devflow version that wrote it. Every skill that runs a shipped file reads it,
+and a stamp differing from the reading skill's own means a record an earlier version wrote, which
+refuses rather than resolving to a stale directory that still exists. Scoped to the install, so
+it is the part of the machine record an upgrade invalidates and the only part.
+_Avoid_: plugin path, root cache, machine config, install state
+
+**Machine record**:
+The one file devflow owns outside any repository, holding what nothing in the tree can answer:
+the install record, the host slug, and the capability declarations when a human rather than an
+adapter supplied them. Everything else a host decides is read from the adapter where it is used,
+because a second copy drifts with nothing to catch it. Scoped to the machine, which is why it
+outlives the install record it contains.
+_Avoid_: machine config, devflow state, settings, home config
 
 **Artifact repo**:
 One GitLab repo per team, holding the artifacts an effort produces (maps, specs, ticket
@@ -124,6 +183,14 @@ The user's own session while it is following the router, in the main checkout an
 integration branch. Not an agent and never isolated, which is what lets it reach into a
 worker's worktree to run a gauntlet. It is the only thing that runs a gauntlet.
 _Avoid_: coordinator, driver, primary agent, orchestrator agent
+
+**Isolation check**:
+The orchestrator's assertion, on receiving a worker's report and before anything else, that the
+worker really ran in its own worktree: it looks the branch up in the repository's own worktree
+record and uses the path it finds there. It is a lookup rather than a verification of what the
+worker said, so the worker's reported path is only ever a cross-check. A failed lookup aborts the
+whole run, because an unisolated worker has already written into the main checkout.
+_Avoid_: worktree-root comparison, isolation detection, worktree verification
 
 **Router**:
 The one skill a user invokes to start or resume work. It reads the configuration, says

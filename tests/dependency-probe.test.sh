@@ -215,12 +215,11 @@ check $((status == 0 ? 0 : 1)) "an installation missing every other optional ski
 
 # --- the supported install layout: one real directory reached through two roots ----------
 #
-# This is the regression guard for the live machine. The supported install route,
-# npx skills@latest add mattpocock/skills -a claude-code, puts the skills in
-# ~/.agents/skills and symlinks ~/.claude/skills/<name> at them, so every correctly
-# installed skill is reachable through two roots. A duplicate rule that compared roots
-# rather than real directories would call all eleven doubled and refuse on a machine
-# that is right.
+# This is the regression guard for the live machine. Upstream's installer puts the
+# skills under one root and symlinks the host's own root at them, one link per skill, so
+# every correctly installed skill is reachable through two roots. A duplicate rule that
+# compared roots rather than real directories would call all eleven doubled and refuse on
+# a machine that is right.
 
 real=$(fresh symlink-real)
 linked=$(fresh symlink-linked)

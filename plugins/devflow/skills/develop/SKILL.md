@@ -20,9 +20,9 @@ deliberate exception and it is labelled as one.
 **Review is not a phase.** The build skills close with their own code review. A review phase
 here would either duplicate that or run a second one that never comes back clean.
 
-## Before anything, three times over
+## Before anything, four times over
 
-All three run at this skill's own start, which is the moment `/develop` is typed, before the
+All four run at this skill's own start, which is the moment `/develop` is typed, before the
 effort is resolved and before any phase is named. Nothing here runs earlier than that: a skill
 is inert text until a model loads it, and this plugin registers no `SessionStart` hook.
 
@@ -48,14 +48,17 @@ that needs it, and each skill states its own requirement.
 
 ### The recorded version and the running version
 
-The stamp is `.devflow.version` in that same file:
+**devflow version: 0.3.0**. This skill's own stamp, shipped in its body because a version
+read from a recorded plugin root would compare a stale install against itself and agree.
+
+That stamp **is** the running version. This skill reads no manifest to find it, and it does not
+work out where its own file sits: nothing gives a model the path of the text it is reading.
+
+The recorded stamp is `.devflow.version` in that same file:
 
 ```
 jq -r '.devflow.version // empty' docs/agents/workflow.json
 ```
-
-The running version is the `version` in `.claude-plugin/plugin.json` under the plugin root,
-which is the directory two above this file's own directory.
 
 | What you find | What you do |
 | --- | --- |
@@ -67,27 +70,66 @@ which is the directory two above this file's own directory.
 An upgrade that moved the configuration under you is the one failure that otherwise shows up
 three phases later as a key that is mysteriously absent. This is what makes it loud instead.
 
+### This machine's record, and where the plugin is
+
+The probe below runs a script this plugin ships, and the path to it is built from the plugin
+root this machine's record holds. Read the record yourself, with `jq`, at that literal path:
+
+```
+jq -r '.pluginRoot' "$HOME/.devflow/machine.json"
+jq -r '.devflowVersion' "$HOME/.devflow/machine.json"
+```
+
+No shipped script can read it for you, because locating a shipped script is the thing the record
+is for.
+
+| What you find | What you do |
+| --- | --- |
+| No file at that path | **Refuse.** Setup has not run on this machine. Name `setup-devflow`. |
+| `devflowVersion` differs from this skill's body stamp above | **Refuse.** The record was written by a different version of devflow. Name `setup-devflow` and say both stamps out loud, the recorded one and this skill's own. |
+| They agree | Take `pluginRoot` and build each path below from it, at the point of use. |
+
+The two refusals are separate messages because they send the human to different places: in one
+case setup has never run on this machine, in the other it ran before an upgrade. Neither falls
+back to a recorded root that still resolves, because a root left pointing at the previous
+version's directory still exists and its scripts still run.
+
 ### The upstream skills the flow depends on
 
 The phases below name and load skills this plugin does not ship. Every way that dependency can
 fail, it fails silently, so it is read as an exit code rather than judged:
 
 ```
-${CLAUDE_PLUGIN_ROOT}/scripts/scan-skill-environment.sh <repository root>
+<plugin root>/scripts/scan-skill-environment.sh <repository root>
 ```
 
-A path still spelled as a variable when you read it is a path the host did not substitute.
+`<plugin root>` is the path you just read out of the record. Build the real path before running
+the command; nothing in this body expands it for you.
 
 **Exit 0 continues the run, and you state what the probe found.** Say the counts it printed,
 `skills-before`, `skills-after`, `devflow-adds` and `findings`, in this session. A bug report
 that is really a version skew then carries the state it skewed from.
 
 **Any other exit refuses.** Hand back the probe's own lines unedited, name each one as what
-failed, and name the install that writes the skills it scanned for:
+failed, and state the requirement behind them: **the upstream skills this flow loads resolve
+by bare name on this machine.** devflow ships no copy of them. That requirement holds on every
+host, so it is stated on every refusal here, with no command inside it.
+
+**The command that satisfies it here is printed in addition, where it can be read.** It is
+slot 6 of this host's adapter. Read the slug from the record you already have open, then read
+slot 6 from `<plugin root>/adapters/<slug>.md` where the plugin ships one for that slug and
+`$HOME/.devflow/adapters/<slug>.md` where it does not:
 
 ```
-npx skills@latest add mattpocock/skills -a claude-code
+jq -r '.hostSlug // empty' "$HOME/.devflow/machine.json"
 ```
+
+- **A command.** Print it under the requirement, as the way this host installs them.
+- **The adapter answers that this host has no equivalent.** Say so in one line, rather than
+  printing nothing: there is no install command for this host and the requirement stands.
+- **No slug recorded, or no adapter for the one recorded.** Say no host is declared on this
+  machine, so devflow has no command to give, and name `setup-devflow` as where that is
+  decided.
 
 Exit 2 is a scan that could not be performed, which is not a pass. Refuse on it too, and say the
 scan did not run rather than letting it read as a dependency that is missing.
