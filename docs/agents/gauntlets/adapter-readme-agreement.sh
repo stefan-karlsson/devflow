@@ -132,7 +132,7 @@ done
 # unnamed, which is one fault told many times.
 if [ "$structural" -eq 0 ]; then
 	if [ "${#rows[@]}" -eq 0 ]; then
-		report "$readme_rel" 'the host table under "## Hosts" names no host, so agreement would hold over an empty set'
+		report "$readme_rel" 'the host table under "## Hosts" names no host, so the check would pass vacuously'
 	fi
 
 	for slug in "${shipped[@]}"; do

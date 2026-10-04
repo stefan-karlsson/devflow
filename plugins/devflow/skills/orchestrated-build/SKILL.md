@@ -1,6 +1,6 @@
 ---
 name: orchestrated-build
-description: Parent-side rules for building many tickets at once, each worker isolated in its own git worktree, merging into one integration branch as they finish. Use when a spec's tickets are ready to build and the session you are in is the user's own unisolated session in the main checkout. Covers spawning isolated workers, the branch-and-SHA report contract, verifying each worker's isolation in git's own worktree record before anything else, running the ticket gauntlet in that worktree as the gate, fast-forward merges, the two retry budgets, worktree cleanup and what to hand a human. Another skill can load this one, and a human can still type it.
+description: Parent-side rules for building many tickets at once, each worker isolated in its own git worktree, merging into one integration branch as they finish. Use when a spec's tickets are ready to build and the session you are in is the user's own unisolated session in the main checkout.
 ---
 
 # Orchestrated build
@@ -18,7 +18,7 @@ upstream's installed build command, and the rules below govern the loop that com
 Everything here is **parent-side**. The worker's rules are a separate file, for a reason
 given below.
 
-**devflow version: 0.3.1**. This skill's own stamp, shipped in its body because a version
+**devflow version: 0.3.2**. This skill's own stamp, shipped in its body because a version
 read from a recorded plugin root would compare a stale install against itself and agree.
 
 ## The one thing that varies between repositories

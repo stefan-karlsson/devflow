@@ -24,7 +24,7 @@ No shipped script can read that record for you, because locating a shipped scrip
 the record is for. Read it yourself with `jq`, at that literal path, at the point of use. Refusal
 step 1 is where the root is acquired and where a stale one is caught.
 
-**devflow version: 0.3.1**. This skill's own stamp, shipped in its body because a version
+**devflow version: 0.3.2**. This skill's own stamp, shipped in its body because a version
 read from a recorded plugin root would compare a stale install against itself and agree.
 
 That stamp is one side of **every** version comparison this skill makes, and the record is never
@@ -182,9 +182,9 @@ Act on the exit code:
 - **0.** The dependency is satisfied. Continue.
 - **1.** The dependency is not satisfied. Refuse.
 - **2.** The scan could not be performed, and it says why on stderr: a root that exists and
-  cannot be read, an unset `HOME`, a repository root that is not a directory. Refuse. A scan
-  that did not run is not a scan that passed, and treating it as one restores exactly the silent
-  failure the probe exists to remove.
+  cannot be read, an unset `HOME`, a repository root that is not a directory. Refuse. A pass
+  read off a scan that did not run is vacuous, and restores exactly the silent failure the probe
+  exists to remove.
 
 On either refusal, print two things: the requirement, then **the probe's own output,
 verbatim**. Write nothing in their place.
@@ -291,7 +291,7 @@ shipped script is what the record answers.
 {
   "pluginRoot": "/absolute/path/to/the/plugin/root",
   "acquisitionMethod": "claude plugin list --json, read installPath for the devflow entry",
-  "devflowVersion": "0.3.1",
+  "devflowVersion": "0.3.2",
   "hostSlug": "claude-code",
   "capabilities": {}
 }
@@ -379,9 +379,8 @@ asserted on every run rather than once at onboarding.
   and repeat the exposure rather than reporting a pass.
 - **Check the executable bit survived.** Assert it on the scripts in the scripts directory under
   the plugin root and on every file the installer copied, in **both** destinations: the code
-  repository and the artifact repository clone. A check without the bit
-  is unrunnable, and the contract makes an unrunnable check a **failure** rather than a skip, so
-  a lost bit turns every gate red at the worst moment. Report the paths that lack it.
+  repository and the artifact repository clone. A check without the bit is vacuous, so a lost
+  bit turns every gate red at the worst moment. Report the paths that lack it.
 - **Tell the user how to make what was written take effect.** Most hosts do not re-read plugin or
   repository configuration mid-session, so the session that ran this skill is the one session in
   which none of what was just written is in effect. An engineer who keeps working in it sees a

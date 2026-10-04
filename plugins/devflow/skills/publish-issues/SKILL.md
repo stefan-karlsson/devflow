@@ -1,6 +1,6 @@
 ---
 name: publish-issues
-description: Turn the draft issues of one effort into Jira issues, one at a time, through a fixed gate order. Use when a spec's tickets have been written and nothing has reached the board yet, when a publish was interrupted and has to be resumed, or when a single hand-written ticket has to be published on its own. Creates or reuses the spec epic, then per draft runs the `issue` gauntlet, a non-blocking review in a fresh subagent and a human approval, then `acli jira workitem create`, then commits and pushes the key back into the draft before moving on. Blocking relationships are added in a second pass once every key exists. Writes no label and no status transition, ever. Another skill can load this one, and a human can type it.
+description: Turn the draft issues of one effort into Jira issues, one at a time, through a fixed gate order. Use when a spec's tickets have been written and nothing has reached the board yet, when a publish was interrupted and has to be resumed, or when a single hand-written ticket has to be published on its own.
 ---
 
 # Publish issues

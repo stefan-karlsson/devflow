@@ -206,9 +206,9 @@ jq -e . docs/agents/workflow.json
 ```
 
 Then assert the pair landed together and the executable bit came with them: both files are in
-`docs/agents/gauntlets/` and both are executable. The gauntlet contract makes a declared but
-unrunnable check a **failure** rather than a skip, so a lost bit on the converter would turn the
-`issue` run point red for the whole team with nothing naming the cause.
+`docs/agents/gauntlets/` and both are executable. A declared check without the bit is vacuous,
+so a lost bit on the converter would turn the `issue` run point red for the whole team with
+nothing naming the cause.
 
 The committed mode carries the bit to everyone else, so this is worth asserting once here rather
 than per teammate.

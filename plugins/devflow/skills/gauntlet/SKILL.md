@@ -1,6 +1,6 @@
 ---
 name: gauntlet
-description: Run a repository's declared checks for one run point and hand the result back as text. Use when a transition has to be gated, a ticket before it merges, the integration branch before the work is handed over, or a draft issue before it reaches Jira. Takes a run point from the closed set `ticket`, `integration`, `issue` and a subject path, runs every check the configuration declares for that run point, and reports each one as `passed`, `failed` or `not run` with the captured output verbatim. Another skill can load this one, and a human can type it.
+description: Run a repository's declared checks for one run point and hand the result back as text. Use when a transition has to be gated, a ticket before it merges, the integration branch before the work is handed over, or a draft issue before it reaches Jira.
 ---
 
 # Gauntlet

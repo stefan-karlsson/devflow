@@ -8,7 +8,7 @@
         {
             "name": "devflow",
             "source": "./plugins/devflow",
-            "version": "0.3.1",
+            "version": "0.3.2",
             "description": "A configuration contract and workflow router that runs one development workflow on any host meeting its capability contract.",
             "author": {
                 "name": "Stefan Karlsson"

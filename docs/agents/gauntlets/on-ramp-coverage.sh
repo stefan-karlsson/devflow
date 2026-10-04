@@ -126,7 +126,7 @@ for name in ${onramps[@]+"${onramps[@]}"}; do
 done
 
 if [ "$structural" -eq 0 ] && [ "${#names[@]}" -eq 0 ]; then
-	printf 'on-ramp-coverage: the table under "## On-ramps" in %s names no skill, so coverage would hold over an empty set.\n' \
+	printf 'on-ramp-coverage: the table under "## On-ramps" in %s names no skill, so the check would pass vacuously.\n' \
 		"$router_rel" >&2
 	exit 2
 fi
@@ -141,7 +141,7 @@ while IFS= read -r name; do probe_names+=("$name"); done < <(awk '
 ' <"$probe" | tr -s '[:space:]' '\n' | grep -v '^$')
 
 if [ "${#probe_names[@]}" -eq 0 ]; then
-	printf 'on-ramp-coverage: %s declares no required_skills or optional_skills entries, so membership would hold over an empty set.\n' \
+	printf 'on-ramp-coverage: %s declares no required_skills or optional_skills entries, so the check would pass vacuously.\n' \
 		"$probe_rel" >&2
 	exit 2
 fi

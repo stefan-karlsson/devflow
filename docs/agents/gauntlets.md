@@ -29,8 +29,8 @@ there. Writing eight one way and two another would cost more than the lines it s
 get factored out is anything a single check says twice.
 
 This repository is deliberately half-configured: `ticket` is populated, `integration` and
-`issue` are declared and empty. A run point with nothing declared is reported as *not run*,
-never as a pass, and that is the first live test of the rule.
+`issue` are declared and empty. A run point with nothing declared is vacuous and reported as
+*not run*, which is the first live test of the rule.
 
 ## How a finding becomes a check
 

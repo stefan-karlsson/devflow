@@ -1,6 +1,6 @@
 ---
 name: develop
-description: Start or resume an effort and say which phase it is in. Use when work on a spec begins, when a session picks up an effort somebody left half-built, or when an engineer does not know what to do next. Reads the configuration and the version stamp and runs the upstream dependency probe, refusing on any of the three, then resolves the effort in the artifact repository and inspects the tracker and the integration branch in a fixed order until the first miss names the phase. Carries the whole flow, from grilling an idea through spec, tickets, publishing to the tracker, the build, the merge request and the retro, naming the build mode rather than discovering it. Loads the procedures the flow needs and names the phase for the engineer to type, so nothing expensive starts without them.
+description: Start or resume an effort and say which phase it is in, naming the one thing to type next. Use when work on a spec begins, when a session picks up an effort somebody left half-built, or when an engineer does not know what to do next.
 disable-model-invocation: true
 ---
 
@@ -55,7 +55,7 @@ that needs it, and each skill states its own requirement.
 
 ### The recorded version and the running version
 
-**devflow version: 0.3.1**. This skill's own stamp, shipped in its body because a version
+**devflow version: 0.3.2**. This skill's own stamp, shipped in its body because a version
 read from a recorded plugin root would compare a stale install against itself and agree.
 
 That stamp **is** the running version. This skill reads no manifest to find it, and it does not
@@ -149,8 +149,8 @@ jq -r '.hostSlug // empty' "$HOME/.devflow/machine.json"
   machine, so devflow has no command to give, and name `setup-devflow` as where that is
   decided.
 
-Exit 2 is a scan that could not be performed, which is not a pass. Refuse on it too, and say the
-scan did not run rather than letting it read as a dependency that is missing.
+Exit 2 is a scan that could not be performed, so reading it as a pass is vacuous. Refuse on it
+too, and say the scan did not run rather than letting it read as a dependency that is missing.
 
 **A `below-floor` finding refuses like every other finding.** It belongs to this check and not
 to the version table above, which is about this plugin's own stamp: a machine below the floor is

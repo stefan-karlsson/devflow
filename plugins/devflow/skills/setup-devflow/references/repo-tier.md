@@ -189,9 +189,9 @@ That path and the team tier's install destination are one fact written in two fi
 from the team tier's own procedure rather than assuming it, and if the two ever disagree the
 declaration is wrong and the install is right.
 
-**Declare it only where the `artifacts` section is written.** The contract makes a declared but
-unrunnable check a failure rather than a skip, so declaring this one against a clone nobody has
-made yet turns the `issue` run point red for the whole team until somebody makes it. Leave the
+**Declare it only where the `artifacts` section is written.** A declared check with nothing to
+run is vacuous, so declaring this one against a clone nobody has made yet turns the `issue` run
+point red for the whole team until somebody makes it. Leave the
 array empty, say that the artifact repository is what fills it, and the re-run that follows its
 creation writes the entry.
 

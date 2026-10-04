@@ -1,6 +1,6 @@
 {
     "devflow": {
-        "version": "0.3.1",
+        "version": "0.3.2",
         "description": "The plugin version this configuration was written against. The router compares it with the running plugin's manifest version when /develop is typed, and manifest-alignment asserts it agrees with both manifests and with every skill body stamp."
     },
     "gauntlets": {

@@ -106,8 +106,7 @@ _Avoid_: parent, theme, feature epic
 
 **Gauntlet**:
 The named set of checks bound to one run point. A repo declares its gauntlets in
-`workflow.json`; a run point with no gauntlet declared is reported as not run, never as
-passed.
+`workflow.json`; a run point with no gauntlet declared is vacuous, reported as not run.
 _Avoid_: gate, suite, quality bar, CI
 
 **Check**:
@@ -127,6 +126,14 @@ The path a check is given, in `GAUNTLET_SUBJECT`. What it points at is decided b
 point: a worktree for `ticket` and `integration`, a draft issue file for `issue`. The
 subject is the only difference between checking code and checking a ticket.
 _Avoid_: target, input, artifact under test
+
+**Vacuous**:
+Green for want of anything asserted: a scan that did not run, a run point declaring no checks,
+a check that cannot be executed, a comparison made over an empty set. Never reported as a pass.
+Which non-pass it becomes belongs to the site, and the two differ: a run point declaring nothing
+is `not run`, while a check that is declared and cannot run is a failure. The empty-set guard
+every check carries exists to make a vacuous result say so rather than come back green.
+_Avoid_: silent pass, empty pass, skip, trivially true, no-op
 
 **Upstream floor**:
 The commit at or after which an upstream installation is supported. Declared once, in the

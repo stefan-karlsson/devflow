@@ -1,6 +1,6 @@
 ---
 name: review-draft-issue
-description: Read one draft issue against the team's Jira issue standard and hand back findings, without blocking and without editing. Use after the `issue` gauntlet and before a human approves a draft for publication, or on its own against a ticket written by hand. Reads exactly two files, the draft and the team standard in the artifact repo, and nothing else, so the draft meets a reader who was not in the room when it was written. Judges what no exit code reaches: whether the acceptance criteria are testable, whether the scope holds, whether the business outcome precedes the implementation, and whether a reader from another team could follow it. Never a gate. Another skill can load this one, and a human can type it.
+description: Read one draft issue against the team's Jira issue standard and hand back findings, without blocking and without editing. Use after the `issue` gauntlet and before a human approves a draft for publication, or on its own against a ticket written by hand.
 ---
 
 # Review a draft issue
