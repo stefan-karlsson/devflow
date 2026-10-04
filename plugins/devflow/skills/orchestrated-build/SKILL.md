@@ -18,7 +18,7 @@ upstream's installed build command, and the rules below govern the loop that com
 Everything here is **parent-side**. The worker's rules are a separate file, for a reason
 given below.
 
-**devflow version: 0.3.0**. This skill's own stamp, shipped in its body because a version
+**devflow version: 0.3.1**. This skill's own stamp, shipped in its body because a version
 read from a recorded plugin root would compare a stale install against itself and agree.
 
 ## The one thing that varies between repositories

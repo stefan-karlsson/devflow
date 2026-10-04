@@ -24,7 +24,7 @@ No shipped script can read that record for you, because locating a shipped scrip
 the record is for. Read it yourself with `jq`, at that literal path, at the point of use. Refusal
 step 1 is where the root is acquired and where a stale one is caught.
 
-**devflow version: 0.3.0**. This skill's own stamp, shipped in its body because a version
+**devflow version: 0.3.1**. This skill's own stamp, shipped in its body because a version
 read from a recorded plugin root would compare a stale install against itself and agree.
 
 That stamp is one side of **every** version comparison this skill makes, and the record is never
@@ -291,7 +291,7 @@ shipped script is what the record answers.
 {
   "pluginRoot": "/absolute/path/to/the/plugin/root",
   "acquisitionMethod": "claude plugin list --json, read installPath for the devflow entry",
-  "devflowVersion": "0.3.0",
+  "devflowVersion": "0.3.1",
   "hostSlug": "claude-code",
   "capabilities": {}
 }

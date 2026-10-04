@@ -55,7 +55,7 @@ that needs it, and each skill states its own requirement.
 
 ### The recorded version and the running version
 
-**devflow version: 0.3.0**. This skill's own stamp, shipped in its body because a version
+**devflow version: 0.3.1**. This skill's own stamp, shipped in its body because a version
 read from a recorded plugin root would compare a stale install against itself and agree.
 
 That stamp **is** the running version. This skill reads no manifest to find it, and it does not

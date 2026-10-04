@@ -24,6 +24,9 @@ file and holds no rules of its own.
 - The two manifests, `.claude-plugin/marketplace.json` and
   `plugins/devflow/.claude-plugin/plugin.json`, agree on name, version, description and author,
   and the router's version stamp agrees with them.
+- A change to any file the plugin ships bumps that version. A host caches the plugin under its
+  version and will not re-fetch the same one, so a fix shipped without a bump reaches nobody,
+  including the engineer who wrote it and then watched their own install serve the old text.
 - Marketplace paths stay relative, and the plugin owns the source of truth for every file it
   ships, including the ones it copies out.
 - Every repo-specific value lives in `workflow.json`.
