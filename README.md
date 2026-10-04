@@ -24,10 +24,6 @@ claude plugin install devflow@devflow
 
 The marketplace and the plugin share the name, which is why `devflow@devflow` reads twice.
 
-**The GitHub rename is pending.** The repository is still published at
-`stefan-karlsson/skills`; substitute that until the rename lands, after which GitHub redirects
-the old path permanently and either spelling resolves.
-
 ## Set up a repository
 
 Run `/setup-devflow` inside every repository the team builds in, and again after a plugin
