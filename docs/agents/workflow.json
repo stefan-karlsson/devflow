@@ -41,6 +41,11 @@
                 "description": "Every relative link in every tracked markdown file this repository owns resolves."
             },
             {
+                "name": "on-ramp-coverage",
+                "command": "docs/agents/gauntlets/on-ramp-coverage.sh",
+                "description": "Every skill the router's on-ramp table routes to is a name the dependency probe declares, required or optional. A row added to the table and nowhere else is a name the probe's duplicate rule does not cover."
+            },
+            {
                 "name": "skill-conformance",
                 "command": "docs/agents/gauntlets/skill-conformance.sh",
                 "description": "The Agent Skills specification's Must rules over every skill directory in the subject. The plugin owns this file and the payload installer copies it here."
@@ -79,6 +84,11 @@
                 "name": "worktree-isolation-tests",
                 "command": "tests/worktree-isolation.test.sh",
                 "description": "The worktree isolation script against real git repositories with real worktrees: the isolated branch, the branch held by the main checkout, the branch no worktree holds, the stale SHA, the detached HEAD, the separate clone, the prefix branch name, and the arguments that leave it unable to answer."
+            },
+            {
+                "name": "on-ramp-coverage-tests",
+                "command": "tests/on-ramp-coverage.test.sh",
+                "description": "The on-ramp coverage check against fixture routers and probes: a name reached through each list, a name in neither, a name declared only in a comment inside an array, an unreadable row, and each way the two files leave it unable to assert."
             }
         ],
         "integration": [],

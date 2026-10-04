@@ -62,11 +62,26 @@ machine, and a refusal at step 1 or step 2 may have neither. Take the three case
   stands and say no host is declared on this machine yet, so there is no command to give. The
   requirement is the part that is true everywhere, which is why it is the part always printed.
 
-Three checks run below, in the order given, all of them before anything is written, and any one
-of them ends the run. Report what the check found, print the three steps above so the human can
-see which one they are on, and stop. Do not offer to continue, and do not write a single file: a
-refused run leaves this machine and this repository exactly as it found them, and running the
-skill again once the named step is done is the whole recovery.
+Three checks run below, in the order given, all of them before anything is written.
+
+**Run every one you can and refuse once, carrying all of them.** A failed check does not end
+the run, it decides it: the remaining checks still run and the refusal reports what all of them
+found. Only one dependency constrains this, and it is check 3's on check 1: the probe is reached
+at a path built from the plugin root, so a check 1 that could not acquire one leaves check 3
+unrun, and you say it did not run rather than dropping it. Check 2 depends on nothing and always
+runs.
+
+Stopping at the first failure costs the human a round trip per fault on a machine that has
+several, which is the ordinary state of a machine nobody has set up yet. The same reasoning puts
+host selection after both upstream checks rather than before them.
+
+Then report what the checks found, print the three steps above so the human can see which one
+they are on, and stop. **Do not offer to continue, and do not offer to do something else
+instead.** Naming the step that unblocks them is the whole of the help here; picking up adjacent
+work because setup refused is this skill deciding what the session does next, which is not its
+call. Write not a single file either: a refused run leaves this machine and this repository
+exactly as it found them, and running the skill again once the named step is done is the whole
+recovery.
 
 ### 1. The plugin root cannot be acquired
 
@@ -82,6 +97,19 @@ Asking is the design here rather than a fallback. The method for finding the plu
 of the things a host adapter answers, and every adapter sits under the plugin root, so reading
 one to find the root would need the root already. The human breaks that loop once per machine.
 The answer is cached, and nothing asks again while it holds.
+
+**Ask it even when another check has already failed.** A refused run writes nothing, so the
+answer is not kept and the question comes back on the next run: that is true, and it is not a
+reason to skip it. The answer is what lets check 3 run, and a refusal carrying the probe's
+verdict is worth one question that gets asked twice. Skipping it buys a shorter refusal and
+costs the human the finding they came back for.
+
+**Where the answer does not come from the human it comes from the record, and from nowhere
+else.** Not a host's plugin cache, not a search of the filesystem for a directory named devflow,
+not a path that happened to appear earlier in this session. Each of those finds *an* install,
+and the two assertions below are not a substitute for being told which one this machine runs:
+they pass against any current install, including one this machine will never load. A root
+nobody has given you is a question you have not asked yet.
 
 **Assert the answer before anything uses it**, both of these, in order:
 

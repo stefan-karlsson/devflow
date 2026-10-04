@@ -26,6 +26,13 @@ All four run at this skill's own start, which is the moment `/develop` is typed,
 effort is resolved and before any phase is named. Nothing here runs earlier than that: a skill
 is inert text until a model loads it, and this plugin registers no `SessionStart` hook.
 
+**Run every one you can and refuse once, carrying all of them.** They are independent, with a
+single exception: the probe is reached through the plugin root the machine record holds, so a
+missing record leaves the probe unrun, and you say it did not run rather than dropping it. Do
+not stop at the first failure. A machine with neither a configuration nor a record has two
+things to fix, and learning about the second one after fixing the first is two round trips for
+one answer.
+
 ### The configuration parses, and declares nothing you do not know
 
 ```
@@ -89,10 +96,16 @@ is for.
 | `devflowVersion` differs from this skill's body stamp above | **Refuse.** The record was written by a different version of devflow. Name `setup-devflow` and say both stamps out loud, the recorded one and this skill's own. |
 | They agree | Take `pluginRoot` and build each path below from it, at the point of use. |
 
-The two refusals are separate messages because they send the human to different places: in one
+The two refusals are separate findings because they send the human to different places: in one
 case setup has never run on this machine, in the other it ran before an upgrade. Neither falls
 back to a recorded root that still resolves, because a root left pointing at the previous
 version's directory still exists and its scripts still run.
+
+**There is no second way to find the plugin root, so do not go looking for one.** Not a host's
+plugin cache, not a search of the filesystem for a directory named devflow, not a path that
+happened to appear earlier in this session. Each of those finds *an* install, and the record
+exists because that is not the same fact as the install this machine is configured to run. A
+missing record is a refusal, not a cue to start hunting.
 
 ### The upstream skills the flow depends on
 
@@ -303,3 +316,10 @@ it and route there instead of starting the flow.
 
 Naming one is routing, which is this skill's whole job. Saying what one does is not, and it
 would be a second description of something that already has one.
+
+**Name it even when it is not installed, and still do not do its work.** All six are optional
+by design: the dependency probe lists them as considered and not required, so their absence is
+not a finding and nothing earlier in this run will have mentioned it. When the one you name is
+not reachable, say so in the same breath, name it anyway so the engineer knows what is missing,
+and stop there. Routing to a skill that is absent is still routing. Picking up the work it owns
+because it is absent is this skill starting a phase, which is the one thing it never does.

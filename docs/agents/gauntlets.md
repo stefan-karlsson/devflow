@@ -21,11 +21,11 @@ install refuse rather than overwrite. A check with no such header is this reposi
 asserting on this plugin's packaging, which no consumer repository has. The installer reports
 orphans rather than deleting them, which is what makes one directory safe for both.
 
-**Every check is standalone, and the repeated preamble is the price of that.** All nine resolve
+**Every check is standalone, and the repeated preamble is the price of that.** All ten resolve
 their subject and define `report()` the same way, in their own text. That is not factored out,
-because two of the nine are copied into a consumer repository one file at a time: an installer
+because two of the ten are copied into a consumer repository one file at a time: an installer
 that copies files rather than dependency trees would deliver a check whose shared source is not
-there. Writing seven one way and two another would cost more than the lines it saves. What does
+there. Writing eight one way and two another would cost more than the lines it saves. What does
 get factored out is anything a single check says twice.
 
 This repository is deliberately half-configured: `ticket` is populated, `integration` and
@@ -55,19 +55,20 @@ Write the check before you believe it. A check that has never failed is not know
 may be asserting nothing, or asserting it against the wrong path. Every check here was proved
 to fail against a deliberately broken fixture before it was declared to pass.
 
-### The `ticket` set carries five entries beyond the specification's table
+### The `ticket` set carries seven entries beyond the specification's table
 
 The specification's "Entries at that seam" is a closed table of ten rows. `workflow.json`
-declares fifteen. The five beyond it are `issue-standards-tests`, `adapter-slot-completeness`,
-`adapter-readme-agreement`, `adapter-checks-tests` and `worktree-isolation-tests`, and each is
+declares seventeen. The seven beyond it are `issue-standards-tests`,
+`adapter-slot-completeness`, `adapter-readme-agreement`, `adapter-checks-tests`,
+`worktree-isolation-tests`, `on-ramp-coverage` and `on-ramp-coverage-tests`, and each is
 there by the design rather than around it: the rule is that a ticket which creates a testable
 subject declares the entry for that subject, and every one of those subjects was built after
 the table was written down. The table was reopened by that rule working, not by checks arriving
 unannounced.
 
 This is recorded so the next reader meets a decision instead of a discrepancy. The count in the
-specification is the count at the time it was written, and `workflow.json` is the list. A
-sixteenth entry arrives the same way, through a ticket that creates something testable, or it
+specification is the count at the time it was written, and `workflow.json` is the list. An
+eighteenth entry arrives the same way, through a ticket that creates something testable, or it
 does not arrive.
 
 ## The conformance claim
